@@ -1,0 +1,100 @@
+library(gibbonR)
+library(tuneR)
+library(seewave)
+library(signal)
+library(stringr)
+
+# Create short .wav clips -------------------------------------------------
+
+# List text files in directory
+ListSelectionTables <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis",
+           pattern = '.txt',full.names =T)
+
+ListSelectionTablesShort <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis",
+                                  pattern = '.txt',full.names =F)
+
+# List .wav files in directory
+ListWavFiles <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis",
+                                  pattern = '.wav',full.names =T)
+
+ListWavFilesShort <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis",
+                           pattern = '.wav',full.names =F)
+
+ListWavFilesShort <- str_split_fixed(ListWavFilesShort,pattern = '.wav',n=2)[,1]
+
+# Prepare clips
+for( a in 3: length(ListSelectionTables)){
+
+  TempSelection <- read.delim( ListSelectionTables[a])
+  TempWav <- readWave(ListWavFiles[a])
+  shortSoundFile <- lapply(1:(nrow(TempSelection)),
+                              function(i)
+                                extractWave(
+                                  TempWav,
+                                  from = TempSelection$Begin.Time..s.[i]-1.5,
+                                  to = TempSelection$End.Time..s.[i]+1.5,
+                                  xunit = c("time"),
+                                  plot = F,
+                                  output = "Wave"
+                                ))
+
+  WavName <- ListWavFilesShort[a]
+
+  lapply(1:(length(shortSoundFile)),
+         function(i)
+           writeWave(
+             shortSoundFile[[i]],
+             filename = paste('data/clips/gunshot/',WavName,i,'.wav',sep='_'),
+             extensible = F
+           ))
+
+
+
+}
+
+# Create noise clips
+# For now using noise from Cambodia
+
+# Create images for training ----------------------------------------------
+# Image creation -----------------------------------------------
+TrainingFolders <- list.files('data/clips',full.names = T)
+TrainingFoldersShort <- list.files('data/clips',full.names = F)
+OutputFolder <- 'data/images'
+FolderVec <- c('train','valid','test') # Need to create these folders
+
+for(z in 1:length(TrainingFolders)){
+  SoundFiles <- list.files(TrainingFolders[z], recursive = T,full.names = T)
+  SoundFilesShort <- list.files(TrainingFolders[z], recursive = T,full.names = F)
+
+  for(y in 1:length(SoundFiles)){
+
+    DataType <-  FolderVec[1]
+
+     if (y%%3 == 0) {
+       DataType <-  FolderVec[2]
+     }
+
+    if (y%%5 == 0) {
+      DataType <-  FolderVec[3]
+    }
+
+    subset.directory <- paste(OutputFolder,DataType,TrainingFoldersShort[z],sep='/')
+
+    if (!dir.exists(subset.directory)){
+      dir.create(subset.directory)
+      print(paste('Created output dir',subset.directory))
+    } else {
+      print(paste(subset.directory,'already exists'))
+    }
+    wav.rm <- str_split_fixed(SoundFilesShort[y],pattern='.wav',n=2)[,1]
+    jpeg(paste(subset.directory, '/', wav.rm,'.jpg',sep=''),res = 50)
+    temp.name <- SoundFiles[y]
+    short.wav <-readWave(temp.name)
+    seewave::spectro(short.wav,tlab='',flab='',axisX=F,axisY = F,scale=F,flim=c(0.4,1.6),grid=F)
+    graphics.off()
+
+  }
+}
+
+
+
