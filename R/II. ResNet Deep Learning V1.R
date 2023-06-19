@@ -27,19 +27,13 @@ train_transforms <- function(img) {
     transform_to_tensor() %>%
     (function(x) x$to(device = device)) %>%
     #transform_random_resized_crop(size = c(224, 224)) %>%
-    transform_color_jitter() %>%
-    #transform_random_horizontal_flip() %>%
-    transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225))
-}
-
-valid_transforms <- function(img) {
-  img %>%
-    transform_to_tensor() %>%
-    (function(x) x$to(device = device)) %>%
+    #transform_color_jitter() %>%
     transform_resize(256) %>%
     transform_center_crop(224) %>%
     transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225))
 }
+
+valid_transforms <- train_transforms
 
 test_transforms <- valid_transforms
 
@@ -51,15 +45,14 @@ train_ds <- image_folder_dataset(
   file.path(input.data, "train"),
   transform = train_transforms)
 
-input.data.valid <-  'data/images'
 
 valid_ds <- image_folder_dataset(
-  file.path(input.data.valid, "valid"),
+  file.path(input.data, "valid"),
   transform = valid_transforms)
 
 
 test_ds <- image_folder_dataset(
-   file.path(input.data.test, "test"),
+   file.path(input.data, "test"),
    transform = test_transforms)
 
 
@@ -81,9 +74,6 @@ train_dl$.length()
 valid_dl$.length()
 test_dl$.length()
 
-b <- train_dl$.iter()$.next()
-classes <- b[[2]]
-classes
 
 # Plot images -------------------------------------------------------------
 library(dplyr)
@@ -110,7 +100,7 @@ images %>%
 # Prepare resnet modelResnet -----------------------------------------------------------
 convnet <- nn_module(
   initialize = function() {
-    self$model <- model_resnet18(pretrained = TRUE)
+    self$model <- model_resnet50(pretrained = TRUE)
     for (par in self$parameters) {
       par$requires_grad_(FALSE)
     }
@@ -138,15 +128,16 @@ model <- convnet %>%
 
 # rates_and_losses <- model %>% lr_finder(train_dl)
 # rates_and_losses %>% plot()
+n.epochs <- 20
 
 fitted <- model %>%
-  fit(train_dl, epochs = 20, valid_data = valid_dl,
+  fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
       callbacks = list(
         luz_callback_early_stopping(patience = 2),
         luz_callback_lr_scheduler(
           lr_one_cycle,
           max_lr = 0.01,
-          epochs = 20,
+          epochs = n.epochs,
           steps_per_epoch = length(train_dl),
           call_on = "on_batch_end"),
         luz_callback_model_checkpoint(path = "cpt_resnet/"),
@@ -186,7 +177,7 @@ print(predictedResnet)
 
 # Calculate the probability associated with each class
 Probability <- as_array(torch_tensor(nnf_softmax(output, dim = 2),device = 'cpu'))
-#predictedResnet <- as.factor(ifelse(Probability[,1] > 0.5,1,2))
+#predictedResnet <- as.factor(ifelse(Probability[,1] > 0.9,1,2))
 
 # Get the correct labels
 correct <- as.factor(as.array(test_ds$samples[[2]]))
@@ -197,14 +188,8 @@ caret::confusionMatrix(predictedResnet,correct, mode='everything')
 # Calcuate the F1 value
 f1_val <- MLmetrics::F1_Score(y_pred = predictedResnet,
                               y_true = correct)
-f1_val # For multiclass is 0.925
+f1_val #
 
-# Create a prediciton object
-pred <- prediction( Probability[,1], correct)
-pred
-# precision/recall curve (x-axis: recall, y-axis: precision)
-perf <- performance(pred, "tpr")
-perf
-plot(perf)
+
 
 

@@ -23,7 +23,7 @@ ListWavFilesShort <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/G
 ListWavFilesShort <- str_split_fixed(ListWavFilesShort,pattern = '.wav',n=2)[,1]
 
 # Prepare clips
-for( a in 3: length(ListSelectionTables)){
+for( a in 1: length(ListSelectionTables)){
 
   TempSelection <- read.delim( ListSelectionTables[a])
   TempWav <- readWave(ListWavFiles[a])
@@ -48,12 +48,45 @@ for( a in 3: length(ListSelectionTables)){
              extensible = F
            ))
 
+  # Create noise clips
+  if(nrow(TempSelection)>1){
+
+   Temp.Noise.Wavs <-  extractWave(
+      TempWav,
+      from = TempSelection$End.Time..s.[1],
+      to = TempSelection$Begin.Time..s.[2],
+      xunit = c("time"),
+      plot = F,
+      output = "Wave"
+    )
+
+   TempSeq <- seq(1,duration(Temp.Noise.Wavs),3)
+   length.seq <- length(TempSeq)-1
+
+   shortNoiseFile <- lapply(1:(length.seq),
+                            function(i)
+                              extractWave(
+                                Temp.Noise.Wavs,
+                                from = TempSeq[i],
+                                to = TempSeq[i+1],
+                                xunit = c("time"),
+                                plot = F,
+                                output = "Wave"
+                              ))
+
+   lapply(1:length(shortNoiseFile),
+          function(i)
+            writeWave(
+              shortNoiseFile[[i]],
+              filename = paste('data/clips/noise/',WavName,i,'.wav',sep='_'),
+              extensible = F
+            ))
+  }
 
 
 }
 
-# Create noise clips
-# For now using noise from Cambodia
+
 
 # Create images for training ----------------------------------------------
 # Image creation -----------------------------------------------
@@ -70,11 +103,11 @@ for(z in 1:length(TrainingFolders)){
 
     DataType <-  FolderVec[1]
 
-     if (y%%3 == 0) {
+     if (y%%5 == 0) {
        DataType <-  FolderVec[2]
      }
 
-    if (y%%5 == 0) {
+    if (y%%10 == 0) {
       DataType <-  FolderVec[3]
     }
 
@@ -90,7 +123,7 @@ for(z in 1:length(TrainingFolders)){
     jpeg(paste(subset.directory, '/', wav.rm,'.jpg',sep=''),res = 50)
     temp.name <- SoundFiles[y]
     short.wav <-readWave(temp.name)
-    seewave::spectro(short.wav,tlab='',flab='',axisX=F,axisY = F,scale=F,flim=c(0.4,1.6),grid=F)
+    seewave::spectro(short.wav,tlab='',flab='',axisX=F,axisY = F,flim=c(0,2),scale=F,grid=F,noisereduction=1)
     graphics.off()
 
   }
