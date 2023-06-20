@@ -3,6 +3,7 @@ library(luz)
 library(torch)
 library(torchvision)
 library(torchdatasets)
+library(ROCR)
 
 # Datasets ----------------------------------------------------------------
 
@@ -16,35 +17,33 @@ to_device <- function(x, device) {
 input.data <-  'data/images'
 
 
-# Combined uses both
 train_ds <- image_folder_dataset(
   file.path(input.data, "train"),
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
-    torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
-    target_transform = function(x) as.double(x) - 1)
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
+  target_transform = function(x) as.double(x) - 1
+)
 
 valid_ds <- image_folder_dataset(
   file.path(input.data, "valid"),
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
-    torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
-  target_transform = function(x) as.double(x) - 1)
-
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
+  target_transform = function(x) as.double(x) - 1
+)
 
 train_dl <- dataloader(train_ds, batch_size = 32, shuffle = TRUE, drop_last = TRUE)
 valid_dl <- dataloader(valid_ds, batch_size = 32, shuffle = FALSE, drop_last = TRUE)
 
 class_names <- train_ds$classes
-length(class_names)
 n.classes <- length(class_names)
 
 net <- torch::nn_module(
-
   initialize = function() {
-    self$model <- model_alexnet(pretrained = TRUE)
+    self$model <- model_vgg19(pretrained = TRUE)
 
     for (par in self$parameters) {
       par$requires_grad_(FALSE)
@@ -52,18 +51,18 @@ net <- torch::nn_module(
 
     self$model$classifier <- nn_sequential(
       nn_dropout(0.5),
-      nn_linear(9216, 512),
+      nn_linear(25088, 4096),
       nn_relu(),
-      nn_linear(512, 256),
+      nn_dropout(0.5),
+      nn_linear(4096, 4096),
       nn_relu(),
-      nn_linear(256, n.classes)
+      nn_linear(4096, n.classes)
     )
   },
   forward = function(x) {
-    self$model(x)[,1]
+    self$model(x)[, 1]
   }
 )
-
 
 fitted <- net %>%
   setup(
@@ -76,7 +75,7 @@ fitted <- net %>%
 
 n.epochs <- 20
 
-modelAlexnetGunshot <- fitted %>%
+modelVGG19 <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
       callbacks = list(
         luz_callback_early_stopping(patience = 2),
@@ -85,15 +84,17 @@ modelAlexnetGunshot <- fitted %>%
           max_lr = 0.01,
           epochs = n.epochs,
           steps_per_epoch = length(train_dl),
-          call_on = "on_batch_end"),
-        luz_callback_model_checkpoint(path = "cpt_Alexnet/"),
-        luz_callback_csv_logger("logs_Alexnet.csv")
+          call_on = "on_batch_end"
+        ),
+        luz_callback_model_checkpoint(path = "cpt_VGG19/"),
+        luz_callback_csv_logger("logs_VGG19.csv")
       ),
       verbose = TRUE)
 
 # Save model output
-luz_save(modelAlexnetGunshot, "modelAlexnetGunshot.pt")
-modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
+luz_save(modelVGG19, "modelVGG19Gibbon.pt")
+modelVGG19 <- luz_load("modelVGG19Gibbon.pt")
+
 
 # Test data metrics -------------------------------------------------------
 test_ds <- image_folder_dataset(
@@ -101,8 +102,9 @@ test_ds <- image_folder_dataset(
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
-    torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
-    target_transform = function(x) as.double(x) - 1)
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
+  target_transform = function(x) as.double(x) - 1
+)
 
 # Variable indicating the number of files
 nfiles <- test_ds$.length()
@@ -112,24 +114,25 @@ test_dl <- dataloader(test_ds, batch_size =nfiles)
 
 # Predict the test files
 
-preds <- predict(modelAlexnetGunshot, test_dl)
+preds <- predict(modelVGG19, test_dl)
 
 # Probability of being in class 1
 probs <- torch_sigmoid(preds)
 
 PredMPS <- as_array(torch_tensor(probs,device = 'cpu'))
 
-predictedAlexnet <- as.factor(ifelse(PredMPS < 0.5,1,2))
+predictedVGG19 <- as.factor(ifelse(PredMPS < 0.5,1,2))
 
 # Get the correct labels
 correct <- as.factor(as.array(test_ds$samples[[2]]))
 
 # Create a confusion matrix
-caret::confusionMatrix(predictedAlexnet,correct, mode='everything')
+caret::confusionMatrix(predictedVGG19,correct, mode='everything')
 
 # Calcuate the F1 value
-f1_val <- MLmetrics::F1_Score(y_pred = predictedAlexnet,
+f1_val <- MLmetrics::F1_Score(y_pred = predictedVGG19,
                               y_true = correct)
 f1_val #
+
 
 

@@ -130,7 +130,7 @@ model <- convnet %>%
 # rates_and_losses %>% plot()
 n.epochs <- 20
 
-fitted <- model %>%
+modelResnetGunshot <- model %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
       callbacks = list(
         luz_callback_early_stopping(patience = 2),
@@ -146,7 +146,6 @@ fitted <- model %>%
       verbose = TRUE)
 
 # Save model output
-modelResnetGunshot <- fitted
 
 luz_save(modelResnetGunshot, "modelResnetGunshot.pt")
 modelResnetGunshot <- luz_load("modelResnetGunshot.pt")

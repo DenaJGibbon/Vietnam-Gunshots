@@ -9,8 +9,10 @@ library(tuneR)
 library(seewave)
 library(gibbonR)
 
-# Load pre-trained model
+# Load pre-trained models
 modelResnetGunshot <- luz_load("modelResnetGunshot.pt")
+modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
+modelVGG19 <- luz_load("modelVGG19.pt")
 
 # Set path to BoxDrive
 BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/TestWavs',
@@ -21,23 +23,21 @@ BoxDrivePathShort <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/G
 
 BoxDrivePathShort <- str_split_fixed(BoxDrivePathShort,pattern = '.wav',n=2)[,1]
 
-SoundFileDF <- data.frame()
 
-clip.duration <- 12
-hop.size <- 6
+clip.duration <- 6
+hop.size <- 3
 
 RavenSelectionTableDF <- data.frame()
 
 
     for(x in 1:length(BoxDrivePath)){ tryCatch({
-      start.time <- Sys.time()
+      start.time.detection <- Sys.time()
       print(paste(x, 'out of', length(BoxDrivePath)))
       TempWav <- readWave(BoxDrivePath[x])
       WavDur <- duration(TempWav)
 
       Seq.start <- list()
       Seq.end <- list()
-
 
       i <- 1
       while (i + clip.duration < WavDur) {
@@ -46,6 +46,7 @@ RavenSelectionTableDF <- data.frame()
         Seq.end[[i]] = i+clip.duration
         i= i+hop.size
       }
+
 
       ClipStart <- unlist(Seq.start)
       ClipEnd <- unlist(Seq.end)
@@ -70,6 +71,7 @@ RavenSelectionTableDF <- data.frame()
       length.files <- seq(1,length,100)
 
       for(q in 1: (length(length.files)-1) ){
+
         RandomSub <-  seq(length.files[q],length.files[q+1],1)
         start.time <- TempClips$ClipStart[RandomSub]
         end.time <- TempClips$ClipEnd[RandomSub]
@@ -92,38 +94,39 @@ RavenSelectionTableDF <- data.frame()
           graphics.off()
         }
 
+    # Predict using Alexnet ----------------------------------------------------
+        print('Classifying images using Alexnet')
 
-        print('Classifying images using ResNET')
         test.input <- 'data/Temp/Images/'
 
         test_ds <- image_folder_dataset(
           file.path(test.input),
-          transform = test_transforms)
+          transform = . %>%
+            torchvision::transform_to_tensor() %>%
+            torchvision::transform_resize(size = c(224, 224)) %>%
+            torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
+          target_transform = function(x) as.double(x) - 1)
 
+        # Predict the test files
         # Variable indicating the number of files
         nfiles <- test_ds$.length()
 
         # Load the test images
         test_dl <- dataloader(test_ds, batch_size =nfiles)
 
-        # Predict the test files
-        output <- predict(modelResnetGunshot,test_dl)
+        preds <- predict(modelAlexnetGunshot, test_dl)
 
-        # Return the index of the max values (i.e. which class)
-        PredMPS <- torch_argmax(output, dim = 2)
+        # Probability of being in class 1
+        probs <- torch_sigmoid(preds)
 
-        # Save to cpu
-        PredMPS <- as_array(torch_tensor(PredMPS,device = 'cpu'))
+        PredMPS <- as_array(torch_tensor(probs,device = 'cpu'))
 
-        # Convert to a factor
-        predictedResnet <- as.factor(PredMPS)
-        print(predictedResnet)
+        predictedAlexnet <- as.factor(ifelse(PredMPS < 0.5,1,2))
 
         # Calculate the probability associated with each class
-        Probability <- as_array(torch_tensor(nnf_softmax(output, dim = 2),device = 'cpu'))
-        #predictedResnet <- as.factor(ifelse(Probability[,1] > 0.5,1,2))
+        Probability <- 1-PredMPS
 
-        OutputFolder <- 'data/Detections/'
+        OutputFolder <- 'data/Detections/Alexnet/'
 
         image.files <- list.files(file.path(test.input),recursive = T,
                                   full.names = T)
@@ -133,43 +136,40 @@ RavenSelectionTableDF <- data.frame()
         image.files.short <- str_split_fixed(image.files.short,pattern = '.jpg',n=2)[,1]
 
         print('Saving output')
-        #ProbabilityVal <- 0.6
-        file.copy(image.files[which(predictedResnet==1)],
+        file.copy(image.files[which(predictedAlexnet==1)],
                   to= paste(OutputFolder,
-                            image.files.short[which(predictedResnet==1 )],
+                            image.files.short[which(predictedAlexnet==1 )],
                             '_',
-                            round(Probability[which(predictedResnet==1 )],2),
-                            '.jpg', sep=''))
+                            round(Probability[which(predictedAlexnet==1 )],2),
+                            '_Alexnet_.jpg', sep=''))
 
-        #Start audio classification
-        Detections <-  image.files.short[which(predictedResnet==1 )]
+        Detections <- image.files.short[which(predictedAlexnet==1 )]
 
         if (length(Detections) > 0) {
-
           Selection <- seq(1, length(Detections))
           View <- rep('Spectrogram 1', length(Detections))
           Channel <- rep(1, length(Detections))
-          MinFreq <- rep(400, length(Detections))
-          MaxFreq <- rep(3000, length(Detections))
-          start.time <- start.time[which(predictedResnet==1 )]
-          end.time <- end.time[which(predictedResnet==1 )]
-          Probability <- round(Probability[which(predictedResnet==1 )],2)
+          MinFreq <- rep(100, length(Detections))
+          MaxFreq <- rep(2000, length(Detections))
+          start.time.new <- as.numeric(str_split_fixed(Detections,pattern = '_',n=3)[,3])
+          end.time.new <- start.time.new + clip.duration
+          Probability <- round(Probability[which(predictedAlexnet==1 )],2)
 
           RavenSelectionTableDFTemp <-
             cbind.data.frame(Selection,
                              View,
                              Channel,
                              MinFreq,
-                             MaxFreq,start.time,end.time,
-                             Detections,Probability)
+                             MaxFreq,start.time.new,end.time.new,Probability,
+                             Detections)
 
           RavenSelectionTableDFTemp <-
             RavenSelectionTableDFTemp[, c(
               "Selection",
               "View",
               "Channel",
-              "start.time",
-              "end.time",
+              "start.time.new",
+              "end.time.new",
               "MinFreq",
               "MaxFreq",
               'Probability',"Detections"
@@ -191,7 +191,24 @@ RavenSelectionTableDF <- data.frame()
           RavenSelectionTableDF <- rbind.data.frame(RavenSelectionTableDF,
                                                     RavenSelectionTableDFTemp)
 
+          if(nrow(RavenSelectionTableDF) > 0){
+            csv.file.name <-
+              paste('data/',
+                    BoxDrivePathShort[x],
+                    'GunshotAlexNET.txt',
+                    sep = '')
 
+            write.table(
+              x = RavenSelectionTableDF,
+              sep = "\t",
+              file = csv.file.name,
+              row.names = FALSE,
+              quote = FALSE
+            )
+            print(paste(
+              "Saving Selection Table"
+            ))
+          }
 
 
         }
@@ -201,40 +218,15 @@ RavenSelectionTableDF <- data.frame()
 
         dir.create('data/Temp/WavFiles')
         dir.create('data/Temp/Images/Images')
-
-        Detected <- str_detect(toString(predictedResnet),'1')
-        Detected <- ifelse(Detected =='TRUE', "Gibbons",'NoGibbons')
-        RecorderID <- paste(BoxDrivePathShort[x], q, sep='_')
-        TempRow <- cbind.data.frame(Detected,RecorderID)
-        SoundFileDF <- rbind.data.frame(SoundFileDF,TempRow)
-        write.csv(SoundFileDF,'data/Images_allSoundfileDF.csv',row.names = F)
       }
 
-      if(nrow(RavenSelectionTableDF) > 0){
-        csv.file.name <-
-          paste('data/',
-                BoxDrivePathShort[x],
-                'GibbonResNET.txt',
-                sep = '')
-
-        write.table(
-          x = RavenSelectionTableDFTemp,
-          sep = "\t",
-          file = csv.file.name,
-          row.names = FALSE,
-          quote = FALSE
-        )
-        print(paste(
-          "Saving Selection Table"
-        ))
-      }
 
       rm(TempWav)
       rm(short.sound.files)
       rm( test_ds )
       rm(short.wav)
-      end.time <- Sys.time()
-      print(end.time-start.time)
+      end.time.detection <- Sys.time()
+      print(end.time.detection-start.time.detection)
     }, error = function(e) { cat("ERROR :", conditionMessage(e), "\n") })
     }
 
