@@ -10,8 +10,8 @@ library(seewave)
 library(gibbonR)
 
 # Load pre-trained models
-modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
-modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
+#modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
+#modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
 
 # Set path to BoxDrive
 BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/TestWavs',
@@ -121,7 +121,7 @@ hop.size <- 3
 
         PredMPS <- 1-PredMPS
 
-        predictedAlexnet <- as.factor(ifelse(PredMPS > 0.85,1,2))
+        predictedAlexnet <- as.factor(ifelse(PredMPS > 0.5,1,2))
 
         # Calculate the probability associated with each class
         Probability <- PredMPS
@@ -262,7 +262,7 @@ hop.size <- 3
 
           PredMPS <- 1-PredMPS
 
-          predictedVGG19 <- as.factor(ifelse(PredMPS > 0.85,1,2))
+          predictedVGG19 <- as.factor(ifelse(PredMPS > 0.5,1,2))
 
           # Calculate the probability associated with each class
           Probability <- PredMPS

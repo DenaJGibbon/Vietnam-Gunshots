@@ -74,7 +74,7 @@ fitted <- net %>%
     )
   )
 
-n.epochs <- 20
+n.epochs <- 1
 
 modelVGG19Gunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
