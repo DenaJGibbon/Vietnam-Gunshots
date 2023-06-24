@@ -12,10 +12,9 @@ knitr::opts_chunk$set(
 ```
 
 ---
-title: Gunshot Detection with AlexNet and VGG19
+title: Gunshot Detection with AlexNet and VGG19 using 'torch for R'
 ---
 
-# Gunshot Detection with AlexNet
 
 This repository contains code for training and evaluating a gunshot detection model using the AlexNet and VGG19 convolutional neural network architecture. The model is trained on the Imagenet dataset and fine-tuned for the specific task of gunshot detection. The code utilizes the 'luz' package in R for deep learning with torch.
 

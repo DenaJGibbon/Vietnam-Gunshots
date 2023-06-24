@@ -1,9 +1,7 @@
-Gunshot Detection with AlexNet and VGG19
+Gunshot Detection with AlexNet and VGG19 using ‘torch for R’
 ================
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-# Gunshot Detection with AlexNet
 
 This repository contains code for training and evaluating a gunshot
 detection model using the AlexNet and VGG19 convolutional neural network
