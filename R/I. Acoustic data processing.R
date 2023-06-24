@@ -23,8 +23,8 @@ ListWavFilesShort <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/G
 ListWavFilesShort <- str_split_fixed(ListWavFilesShort,pattern = '.wav',n=2)[,1]
 
 # Prepare clips
-for( a in 1: length(ListSelectionTables)){
-
+for( a in 40: length(ListSelectionTables)){
+  print(paste('processing', a, 'out of',length(ListSelectionTables)))
   TempSelection <- read.delim( ListSelectionTables[a])
   TempWav <- readWave(ListWavFiles[a])
   shortSoundFile <- lapply(1:(nrow(TempSelection)),
@@ -48,41 +48,41 @@ for( a in 1: length(ListSelectionTables)){
              extensible = F
            ))
 
-  # Create noise clips
-  if(nrow(TempSelection)>1){
-
-   Temp.Noise.Wavs <-  extractWave(
-      TempWav,
-      from = TempSelection$End.Time..s.[1],
-      to = TempSelection$Begin.Time..s.[2],
-      xunit = c("time"),
-      plot = F,
-      output = "Wave"
-    )
-
-   TempSeq <- seq(1,duration(Temp.Noise.Wavs),3)
-   length.seq <- length(TempSeq)-1
-
-   shortNoiseFile <- lapply(1:(length.seq),
-                            function(i)
-                              extractWave(
-                                Temp.Noise.Wavs,
-                                from = TempSeq[i],
-                                to = TempSeq[i+1],
-                                xunit = c("time"),
-                                plot = F,
-                                output = "Wave"
-                              ))
-
-   lapply(1:length(shortNoiseFile),
-          function(i)
-            writeWave(
-              shortNoiseFile[[i]],
-              filename = paste('data/clips/noise/',WavName,i,'.wav',sep='_'),
-              extensible = F
-            ))
-  }
-
+  # # Create noise clips for selections with >1 gunshots
+  # if(nrow(TempSelection)>1){
+  #
+  #  Temp.Noise.Wavs <-  extractWave(
+  #     TempWav,
+  #     from = TempSelection$End.Time..s.[1],
+  #     to = TempSelection$Begin.Time..s.[2],
+  #     xunit = c("time"),
+  #     plot = F,
+  #     output = "Wave"
+  #   )
+  #
+  #  TempSeq <- seq(1,duration(Temp.Noise.Wavs),3)
+  #  length.seq <- length(TempSeq)-1
+  #
+  #  shortNoiseFile <- lapply(1:(length.seq),
+  #                           function(i)
+  #                             extractWave(
+  #                               Temp.Noise.Wavs,
+  #                               from = TempSeq[i],
+  #                               to = TempSeq[i+1],
+  #                               xunit = c("time"),
+  #                               plot = F,
+  #                               output = "Wave"
+  #                             ))
+  #
+  #  lapply(1:length(shortNoiseFile),
+  #         function(i)
+  #           writeWave(
+  #             shortNoiseFile[[i]],
+  #             filename = paste('data/clips/noise/',WavName,i,'.wav',sep='_'),
+  #             extensible = F
+  #           ))
+  # }
+  #
 
 }
 

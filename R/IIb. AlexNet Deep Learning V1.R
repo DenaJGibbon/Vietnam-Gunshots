@@ -21,15 +21,16 @@ train_ds <- image_folder_dataset(
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
-    torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
-    target_transform = function(x) as.double(x) - 1)
+    torchvision::transform_color_jitter() %>%
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
+   target_transform = function(x) as.double(x) - 1)
 
 valid_ds <- image_folder_dataset(
   file.path(input.data, "valid"),
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
-    torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
   target_transform = function(x) as.double(x) - 1)
 
 
@@ -39,6 +40,30 @@ valid_dl <- dataloader(valid_ds, batch_size = 32, shuffle = FALSE, drop_last = T
 class_names <- train_ds$classes
 length(class_names)
 n.classes <- length(class_names)
+
+# Plot images -------------------------------------------------------------
+library(dplyr)
+batch <- train_dl$.iter()$.next()
+classes <- batch[[2]]
+classes
+
+#classes <- as.factor(ifelse(classes ==0,'gunshot','noise'))
+
+images <- as_array(batch[[1]]) %>% aperm(perm = c(1, 3, 4, 2))
+mean <- c(0.485, 0.456, 0.406)
+std <- c(0.229, 0.224, 0.225)
+images <- std * images + mean
+images <- images * 255
+images[images > 255] <- 255
+images[images < 0] <- 0
+
+par(mfcol = c(4,6), mar = rep(1, 4))
+
+images %>%
+  purrr::array_tree(1) %>%
+  purrr::set_names(class_names[as_array(classes)]) %>%
+  purrr::map(as.raster, max = 255) %>%
+  purrr::iwalk(~{plot(.x); title(.y)})
 
 net <- torch::nn_module(
 
@@ -100,7 +125,7 @@ test_ds <- image_folder_dataset(
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
-    torchvision::transform_normalize(rep(0.5, 3), rep(0.5, 3)),
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
     target_transform = function(x) as.double(x) - 1)
 
 # Variable indicating the number of files
@@ -131,11 +156,4 @@ f1_val <- MLmetrics::F1_Score(y_pred = predictedAlexnet,
                               y_true = correct)
 f1_val #
 
-
-# ROCR curves -------------------------------------------------------------
-pred <- prediction( PredMPS, correct)
-pred
-perf <- performance(pred,"tpr","fpr")
-perf
-plot(perf)
 

@@ -21,6 +21,7 @@ train_ds <- image_folder_dataset(
   file.path(input.data, "train"),
   transform = . %>%
     torchvision::transform_to_tensor() %>%
+    torchvision::transform_color_jitter() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
     torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),
   target_transform = function(x) as.double(x) - 1
@@ -43,7 +44,7 @@ n.classes <- length(class_names)
 
 net <- torch::nn_module(
   initialize = function() {
-    self$model <- model_vgg19(pretrained = TRUE)
+    self$model <- model_vgg19 (pretrained = TRUE)
 
     for (par in self$parameters) {
       par$requires_grad_(FALSE)
@@ -75,7 +76,7 @@ fitted <- net %>%
 
 n.epochs <- 20
 
-modelVGG19 <- fitted %>%
+modelVGG19Gunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
       callbacks = list(
         luz_callback_early_stopping(patience = 2),
@@ -92,8 +93,8 @@ modelVGG19 <- fitted %>%
       verbose = TRUE)
 
 # Save model output
-luz_save(modelVGG19, "modelVGG19.pt")
-modelVGG19 <- luz_load("modelVGG19.pt")
+luz_save(modelVGG19Gunshot, "modelVGG19Gunshot.pt")
+modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
 
 
 # Test data metrics -------------------------------------------------------

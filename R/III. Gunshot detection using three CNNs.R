@@ -28,10 +28,11 @@ SoundFileDF <- data.frame()
 clip.duration <- 6
 hop.size <- 3
 
-RavenSelectionTableDF <- data.frame()
+
 
 
     for(x in 1:length(BoxDrivePath)){ tryCatch({
+      RavenSelectionTableDF <- data.frame()
       start.time <- Sys.time()
       print(paste(x, 'out of', length(BoxDrivePath)))
       TempWav <- readWave(BoxDrivePath[x])
