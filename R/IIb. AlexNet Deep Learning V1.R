@@ -17,7 +17,7 @@ input.data <-  'data/images'
 
 # Combined uses both
 train_ds <- image_folder_dataset(
-  file.path(input.data, "train"),
+  file.path(input.data, "trainaddedcleaned"),
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_resize(size = c(224, 224)) %>%
@@ -98,7 +98,7 @@ fitted <- net %>%
     )
   )
 
-n.epochs <- 2
+n.epochs <- 3
 
 modelAlexnetGunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
@@ -116,8 +116,8 @@ modelAlexnetGunshot <- fitted %>%
       verbose = TRUE)
 
 # Save model output
-luz_save(modelAlexnetGunshot, "modelAlexnetGunshot.pt")
-modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
+luz_save(modelAlexnetGunshot, "modelAlexnetGunshot3epochsaddedclean.pt")
+#modelAlexnetGunshot <- luz_load("modelAlexnetGunshot1epochs.pt")
 
 # Test data metrics -------------------------------------------------------
 test_ds <- image_folder_dataset(

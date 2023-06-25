@@ -18,7 +18,7 @@ input.data <-  'data/images'
 
 
 train_ds <- image_folder_dataset(
-  file.path(input.data, "train"),
+  file.path(input.data, "trainaddedcleaned"),
   transform = . %>%
     torchvision::transform_to_tensor() %>%
     torchvision::transform_color_jitter() %>%
@@ -74,7 +74,7 @@ fitted <- net %>%
     )
   )
 
-n.epochs <- 2
+n.epochs <- 3
 
 modelVGG19Gunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
@@ -93,8 +93,8 @@ modelVGG19Gunshot <- fitted %>%
       verbose = TRUE)
 
 # Save model output
-luz_save(modelVGG19Gunshot, "modelVGG19Gunshot.pt")
-modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
+luz_save(modelVGG19Gunshot, "modelVGG19Gunshot3epochsaddedclean.pt")
+#modelVGG19Gunshot <- luz_load("modelVGG19Gunshot3epochs.pt")
 
 
 # Test data metrics -------------------------------------------------------

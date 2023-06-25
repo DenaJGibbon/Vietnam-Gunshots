@@ -74,8 +74,8 @@ for(x in 1:length(BoxDrivePath)){ tryCatch({
 
 # Create spectrogram images -----------------------------------------------
 
-SoundFiles <- list.files('data/clips/test', recursive = T,full.names = T)
-SoundFilesShort <- list.files('data/clips/test', recursive = T,full.names = F)
+SoundFiles <- list.files('data/clips/testaddedgunshot', recursive = T,full.names = T)
+SoundFilesShort <- list.files('data/clips/testaddedgunshot', recursive = T,full.names = F)
 Folder <- str_split_fixed(SoundFilesShort,pattern = '/',n=2)[,1]
 
 SoundFilesShort <-str_split_fixed(SoundFilesShort,pattern = '/',n=2)[,2]
@@ -83,9 +83,9 @@ SoundFilesShort <- str_split_fixed(SoundFilesShort,pattern='.wav',n=2)[,1]
 
 
 
-OutputFolder <- 'data/images/finaltest/'
+OutputFolder <- 'data/images/finaltestadded/'
 
-for(y in 1:length(SoundFiles)){
+for(y in 1:600){
   print(paste('processing',y, 'out of',length(SoundFiles) ))
   wav.rm <- str_split_fixed(SoundFilesShort[y],pattern='.wav',n=2)[,1]
   subset.directory <- paste(OutputFolder,Folder[y],sep='')
