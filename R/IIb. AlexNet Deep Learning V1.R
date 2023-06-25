@@ -98,7 +98,7 @@ fitted <- net %>%
     )
   )
 
-n.epochs <- 1
+n.epochs <- 2
 
 modelAlexnetGunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,

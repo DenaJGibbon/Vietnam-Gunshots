@@ -74,7 +74,7 @@ fitted <- net %>%
     )
   )
 
-n.epochs <- 1
+n.epochs <- 2
 
 modelVGG19Gunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
@@ -115,7 +115,7 @@ test_dl <- dataloader(test_ds, batch_size =nfiles)
 
 # Predict the test files
 
-preds <- predict(modelVGG19, test_dl)
+preds <- predict(modelVGG19Gunshot, test_dl)
 
 # Probability of being in class 1
 probs <- torch_sigmoid(preds)
