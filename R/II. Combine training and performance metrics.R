@@ -15,15 +15,23 @@ to_device <- function(x, device) {
   x$to(device = device)
 }
 
-# Labeled data from BLED detector
+# Spectrogram images for training
 input.data <-  'data/images'
 
-trainingfolders <- c("train", "trainadded", "trainaddedcleaned")
-epoch.iterations <- c(1, 2, 3, 4, 5)
+# Location of spectrogram images for testing
+# Set the path to image files
+imagePath <- "data/images/finaltest"
 
-TransferLearningCNNDF <- data.frame()
+trainingfolders <- c("train", "trainaddedcleaned")
+epoch.iterations <- c(5)
+
+n.classes <- 2
+
 
 for(a in 1:length(trainingfolders)){
+
+  TransferLearningCNNDF <- data.frame()
+
   for(b in 1:length(epoch.iterations)){
 
     trainingfolder <- trainingfolders[a]
@@ -60,7 +68,7 @@ net <- torch::nn_module(
     self$model <- model_alexnet(pretrained = TRUE)
 
     for (par in self$parameters) {
-      par$requires_grad_(FALSE)
+      par$requires_grad_(TRUE)
     }
 
     self$model$classifier <- nn_sequential(
@@ -99,27 +107,27 @@ modelAlexnetGunshot <- fitted %>%
           steps_per_epoch = length(train_dl),
           call_on = "on_batch_end"),
         luz_callback_model_checkpoint(path = "cpt_Alexnet/"),
-        luz_callback_csv_logger(paste( 'output/',trainingfolder,n.epochs, "logs_Alexnet.csv",sep='_'))
+        luz_callback_csv_logger(paste( 'output_unfrozen/',trainingfolder,n.epochs, "logs_Alexnet.csv",sep='_'))
       ),
       verbose = TRUE)
 
 # Save model output
-luz_save(modelAlexnetGunshot, paste( 'output/',trainingfolder,n.epochs, "modelAlexnet.pt",sep='_'))
+luz_save(modelAlexnetGunshot, paste( 'output_unfrozen/',trainingfolder,n.epochs, "modelAlexnet.pt",sep='_'))
 #modelAlexnetGunshot <- luz_load("modelAlexnetGunshot1epochs.pt")
 
-TempCSV.Alexnet <-  read.csv(paste( 'output/',trainingfolder,n.epochs, "logs_Alexnet.csv",sep='_'))
+TempCSV.Alexnet <-  read.csv(paste( 'output_unfrozen/',trainingfolder,n.epochs, "logs_Alexnet.csv",sep='_'))
 
 Alexnet.loss <- TempCSV.Alexnet[nrow(TempCSV.Alexnet),]$loss
 
 
-# Train VGG19 -------------------------------------------------------------
+# Train VGG16 -------------------------------------------------------------
 
 net <- torch::nn_module(
   initialize = function() {
-    self$model <- model_vgg19 (pretrained = TRUE)
+    self$model <- model_vgg16 (pretrained = TRUE)
 
     for (par in self$parameters) {
-      par$requires_grad_(FALSE)
+      par$requires_grad_(TRUE)
     }
 
     self$model$classifier <- nn_sequential(
@@ -146,7 +154,7 @@ fitted <- net %>%
     )
   )
 
-modelVGG19Gunshot <- fitted %>%
+modelVGG16Gunshot <- fitted %>%
   fit(train_dl, epochs = n.epochs, valid_data = valid_dl,
       callbacks = list(
         luz_callback_early_stopping(patience = 2),
@@ -157,23 +165,20 @@ modelVGG19Gunshot <- fitted %>%
           steps_per_epoch = length(train_dl),
           call_on = "on_batch_end"
         ),
-        luz_callback_model_checkpoint(path = "cpt_VGG19/"),
-        luz_callback_csv_logger(paste( 'output/',trainingfolder,n.epochs, "logs_VGG19.csv",sep='_'))
+        luz_callback_model_checkpoint(path = "cpt_VGG16/"),
+        luz_callback_csv_logger(paste( 'output_unfrozen/',trainingfolder,n.epochs, "logs_VGG16.csv",sep='_'))
       ),
       verbose = TRUE)
 
 # Save model output
-luz_save(modelVGG19Gunshot, paste( 'output/',trainingfolder,n.epochs, "modelVGG19.pt",sep='_'))
+luz_save(modelVGG16Gunshot, paste( 'output_unfrozen/',trainingfolder,n.epochs, "modelVGG16.pt",sep='_'))
 
 
-TempCSV.VGG19 <- read.csv(paste( 'output/',trainingfolder,n.epochs, "logs_VGG19.csv",sep='_'))
+TempCSV.VGG16 <- read.csv(paste( 'output_unfrozen/',trainingfolder,n.epochs, "logs_VGG16.csv",sep='_'))
 
-VGG19.loss <- TempCSV.VGG19[nrow(TempCSV.VGG19),]$loss
+VGG16.loss <- TempCSV.VGG16[nrow(TempCSV.VGG16),]$loss
 
 # Calculate performance metrics -------------------------------------------
-
-# Set the path to image files
-imagePath <- "data/images/finaltest"
 
 # Get the list of image files
 imageFiles <- list.files(imagePath, recursive = TRUE, full.names = TRUE)
@@ -188,13 +193,13 @@ imageFileShort <- paste( Folder,imageFileShort,sep='')
 
 # Prepare output tables
 outputTableAlexnet <- data.frame()
-outputTableVGG19 <- data.frame()
+outputTableVGG16 <- data.frame()
 
 # Iterate over image files
 ImageFilesSeq <- seq(1,length(imageFiles),100)
 
 for (i in 1: (length(ImageFilesSeq)-1) ) {
-  print(paste( 'output/','processing', i, 'out of',length(ImageFilesSeq)))
+  print(paste( 'output_unfrozen/','processing', i, 'out of',length(ImageFilesSeq)))
 
   batchSize <-  length(ImageFilesSeq)
 
@@ -229,101 +234,105 @@ for (i in 1: (length(ImageFilesSeq)-1) ) {
   alexnetProb <- 1-as_array(torch_tensor(alexnetProb,device = 'cpu'))
   alexnetClass <- ifelse((alexnetProb) > 0.85, "gunshot", "noise")
 
-  # Predict using VGG19
-  VGG19Pred <- predict(modelVGG19Gunshot, test_dl)
-  VGG19Prob <- torch_sigmoid(VGG19Pred)
-  VGG19Prob <- 1-as_array(torch_tensor(VGG19Prob,device = 'cpu'))
-  VGG19Class <- ifelse((VGG19Prob) > 0.85, "gunshot", "noise")
+  # # Predict using VGG16
+  # VGG16Pred <- predict(modelVGG16Gunshot, test_dl)
+  # VGG16Prob <- torch_sigmoid(VGG16Pred)
+  # VGG16Prob <- 1-as_array(torch_tensor(VGG16Prob,device = 'cpu'))
+  # VGG16Class <- ifelse((VGG16Prob) > 0.85, "gunshot", "noise")
 
   # Add the results to output tables
   outputTableAlexnet <- rbind(outputTableAlexnet, data.frame(Label = TempLong, Probability = alexnetProb, PredictedClass = alexnetClass, ActualClass=Folder[ImageFilesSeq[i]: ImageFilesSeq[i+1]]))
-  outputTableVGG19 <- rbind(outputTableVGG19, data.frame(Label = TempLong, Probability = VGG19Prob, PredictedClass = VGG19Class, ActualClass=Folder[ImageFilesSeq[i]: ImageFilesSeq[i+1]]))
+  # outputTableVGG16 <- rbind(outputTableVGG16, data.frame(Label = TempLong, Probability = VGG16Prob, PredictedClass = VGG16Class, ActualClass=Folder[ImageFilesSeq[i]: ImageFilesSeq[i+1]]))
+
+  # Save false positives to train next iteration
+  # file.copy(TempLong[which(alexnetProb > 0.9)],
+  #           to= paste('data/Temp/Images/Images/',TempShort[which(alexnetProb > 0.9)], sep=''))
 
   unlink('data/Temp/Images/Images', recursive = TRUE)
   dir.create('data/Temp/Images/Images')
 
   # Save the output tables as CSV files
 
-  write.csv(outputTableAlexnet, paste( 'output/',trainingfolder,n.epochs, "output_alexnet.csv",sep='_'), row.names = FALSE)
-  write.csv(outputTableVGG19, paste( 'output/',trainingfolder,n.epochs, "output_VGG19.csv",sep='_'), row.names = FALSE)
+  write.csv(outputTableAlexnet, paste( 'output_unfrozen/',trainingfolder,n.epochs, "output_alexnet.csv",sep='_'), row.names = FALSE)
+  #write.csv(outputTableVGG16, paste( 'output_unfrozen/',trainingfolder,n.epochs, "output_VGG16.csv",sep='_'), row.names = FALSE)
 
 }
 
 
 outputTableAlexnet$PredictedClass <-  ifelse(outputTableAlexnet$Probability > 0.95, "gunshot", "noise")
-outputTableVGG19$PredictedClass <-  ifelse(outputTableVGG19$Probability > 0.95, "gunshot", "noise")
+outputTableVGG16$PredictedClass <-  ifelse(outputTableVGG16$Probability > 0.95, "gunshot", "noise")
 
 # Create a confusion matrix
 AlexnetPerf <- caret::confusionMatrix(as.factor(outputTableAlexnet$PredictedClass),as.factor(outputTableAlexnet$ActualClass), mode='everything')$byClass
 
 # Create a confusion matrix
-VGG19Perf <- caret::confusionMatrix(as.factor(outputTableVGG19$PredictedClass),as.factor(outputTableVGG19$ActualClass), mode='everything')$byClass
+VGG16Perf <- caret::confusionMatrix(as.factor(outputTableVGG16$PredictedClass),as.factor(outputTableVGG16$ActualClass), mode='everything')$byClass
 
 TempRow95Alexnet <- cbind.data.frame( t(AlexnetPerf[c(5:7)]), Alexnet.loss,trainingfolder,n.epochs, 'Alexnet')
 
 colnames(TempRow95Alexnet) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
                                 "N epochs", "CNN Architecture")
 
-TempRow95VGG19 <- cbind.data.frame( t(VGG19Perf[c(5:7)]), VGG19.loss,trainingfolder,n.epochs, 'VGG19')
+TempRow95VGG16 <- cbind.data.frame( t(VGG16Perf[c(5:7)]), VGG16.loss,trainingfolder,n.epochs, 'VGG16')
 
-colnames(TempRow95VGG19) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
+colnames(TempRow95VGG16) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
                               "N epochs", "CNN Architecture")
 
-CombinedTempRow95 <- rbind.data.frame(TempRow95Alexnet,TempRow95VGG19)
+CombinedTempRow95 <- rbind.data.frame(TempRow95Alexnet,TempRow95VGG16)
 CombinedTempRow95$Threshold <- '95'
 
 outputTableAlexnet$PredictedClass <-  ifelse(outputTableAlexnet$Probability > 0.85, "gunshot", "noise")
-outputTableVGG19$PredictedClass <-  ifelse(outputTableVGG19$Probability > 0.85, "gunshot", "noise")
+outputTableVGG16$PredictedClass <-  ifelse(outputTableVGG16$Probability > 0.85, "gunshot", "noise")
 
 # Create a confusion matrix
 AlexnetPerf <- caret::confusionMatrix(as.factor(outputTableAlexnet$PredictedClass),as.factor(outputTableAlexnet$ActualClass), mode='everything')$byClass
 
 # Create a confusion matrix
-VGG19Perf <- caret::confusionMatrix(as.factor(outputTableVGG19$PredictedClass),as.factor(outputTableVGG19$ActualClass), mode='everything')$byClass
+VGG16Perf <- caret::confusionMatrix(as.factor(outputTableVGG16$PredictedClass),as.factor(outputTableVGG16$ActualClass), mode='everything')$byClass
 
 TempRow85Alexnet <- cbind.data.frame( t(AlexnetPerf[c(5:7)]), Alexnet.loss,trainingfolder,n.epochs, 'Alexnet')
 
 colnames(TempRow85Alexnet) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
   "N epochs", "CNN Architecture")
 
-TempRow85VGG19 <- cbind.data.frame( t(VGG19Perf[c(5:7)]), VGG19.loss,trainingfolder,n.epochs, 'VGG19')
+TempRow85VGG16 <- cbind.data.frame( t(VGG16Perf[c(5:7)]), VGG16.loss,trainingfolder,n.epochs, 'VGG16')
 
-colnames(TempRow85VGG19) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
+colnames(TempRow85VGG16) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
                             "N epochs", "CNN Architecture")
 
-CombinedTempRow85 <- rbind.data.frame(TempRow85Alexnet,TempRow85VGG19)
+CombinedTempRow85 <- rbind.data.frame(TempRow85Alexnet,TempRow85VGG16)
 CombinedTempRow85$Threshold <- '85'
 
 
 outputTableAlexnet$PredictedClass <-  ifelse(outputTableAlexnet$Probability > 0.5, "gunshot", "noise")
-outputTableVGG19$PredictedClass <-  ifelse(outputTableVGG19$Probability > 0.5, "gunshot", "noise")
+outputTableVGG16$PredictedClass <-  ifelse(outputTableVGG16$Probability > 0.5, "gunshot", "noise")
 
 # Create a confusion matrix
 AlexnetPerf <- caret::confusionMatrix(as.factor(outputTableAlexnet$PredictedClass),as.factor(outputTableAlexnet$ActualClass), mode='everything')$byClass
 
 # Create a confusion matrix
-VGG19Perf <- caret::confusionMatrix(as.factor(outputTableVGG19$PredictedClass),as.factor(outputTableVGG19$ActualClass), mode='everything')$byClass
+VGG16Perf <- caret::confusionMatrix(as.factor(outputTableVGG16$PredictedClass),as.factor(outputTableVGG16$ActualClass), mode='everything')$byClass
 
 TempRow50Alexnet <- cbind.data.frame( t(AlexnetPerf[c(5:7)]), Alexnet.loss,trainingfolder,n.epochs, 'Alexnet')
 
 colnames(TempRow50Alexnet) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
                                 "N epochs", "CNN Architecture")
 
-TempRow50VGG19 <- cbind.data.frame( t(VGG19Perf[c(5:7)]), VGG19.loss,trainingfolder,n.epochs, 'VGG19')
+TempRow50VGG16 <- cbind.data.frame( t(VGG16Perf[c(5:7)]), VGG16.loss,trainingfolder,n.epochs, 'VGG16')
 
-colnames(TempRow50VGG19) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
+colnames(TempRow50VGG16) <- c("Precision", "Recall", "F1", "Validation loss", "Training Data",
                               "N epochs", "CNN Architecture")
 
-CombinedTempRow50 <- rbind.data.frame(TempRow50Alexnet,TempRow50VGG19)
+CombinedTempRow50 <- rbind.data.frame(TempRow50Alexnet,TempRow50VGG16)
 CombinedTempRow50$Threshold <- '50'
 
 CombinedTempRow <- rbind.data.frame(CombinedTempRow95,CombinedTempRow85,CombinedTempRow50)
 
 TransferLearningCNNDF <-rbind.data.frame(TransferLearningCNNDF, CombinedTempRow)
 
-write.csv(TransferLearningCNNDF,'output/TransferLearningCNNDF.csv', row.names = F)
+write.csv(TransferLearningCNNDF, paste('output_unfrozen/',trainingfolder, '_', n.epochs, '_TransferLearningCNNDF.csv',sep=''), row.names = F)
 
 rm(modelAlexnetGunshot)
-rm(modelVGG19Gunshot)
+rm(modelVGG16Gunshot)
 }
 }

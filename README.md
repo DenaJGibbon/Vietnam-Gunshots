@@ -1,10 +1,10 @@
-Gunshot Detection with AlexNet and VGG19 using ‘torch for R’
+Gunshot Detection with AlexNet and VGG16 using ‘torch for R’
 ================
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 This repository contains code for training and evaluating a gunshot
-detection model using the AlexNet and VGG19 convolutional neural network
+detection model using the AlexNet and VGG16 convolutional neural network
 architecture. The model is trained on the Imagenet dataset and
 fine-tuned for the specific task of gunshot detection. The code utilizes
 the ‘luz’ package in R for deep learning with torch.
@@ -20,7 +20,7 @@ prepare them for input into the model.
 ## Training
 
 The training process involves fine-tuning the pretrained AlexNet or
-VGG19 model by freezing the feature extraction layers and training new
+VGG16 model by freezing the feature extraction layers and training new
 classifier layers. The model is set up with a binary cross-entropy loss
 function and the Adam optimizer. Training is performed for 20 epochs
 with early stopping enabled to prevent overfitting. Additionally, a
@@ -70,3 +70,8 @@ authors for providing the framework for deep learning in R with PyTorch.
 Keydana, Sigrid. Deep Learning and Scientific Computing with R torch.
 CRC Press, 2023.
 <https://skeydan.github.io/Deep-Learning-and-Scientific-Computing-with-R-torch/>
+
+Note to self:
+
+re-rerun with a few more epochs (perhaps 3)? Want to add other gunshot
+training data (?) It did not work well when using as test data

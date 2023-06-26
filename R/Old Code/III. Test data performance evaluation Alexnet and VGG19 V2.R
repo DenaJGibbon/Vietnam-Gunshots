@@ -7,8 +7,8 @@
       library(ROCR)
 
       # Load pre-trained models
-      #modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
-      #modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
+     #modelAlexnetGunshot <- luz_load("ModelsforExperiment/modelAlexnetGunshot1epoch.pt")
+     #modelVGG19Gunshot <- luz_load("ModelsforExperiment/modelVGG19Gunshotearly1epoch.pt")
 
       # Set the path to image files
       imagePath <- "data/images/finaltest"
@@ -22,16 +22,22 @@
       Folder <- str_split_fixed( imageFileShort,pattern = '/',n=2)[,1]
 
       imageFileShort <- str_split_fixed( imageFileShort,pattern = '/',n=2)[,2]
+      imageFileShort <- paste(Folder,imageFileShort,sep='')
 
       # Prepare output tables
       outputTableAlexnet <- data.frame()
       outputTableVGG19 <- data.frame()
 
       # Iterate over image files
-      for (i in 1:length(imageFiles)) {
-        print(paste('processing', i, 'out of',length(imageFiles)))
-        TempLong <- imageFiles[i]
-        TempShort <-  imageFileShort[i]
+      ImageFilesSeq <- seq(1,length(imageFiles),100)
+
+      for (i in 1: (length(ImageFilesSeq)-1) ) {
+        print(paste('processing', i, 'out of',length(ImageFilesSeq)))
+
+        batchSize <-  length(ImageFilesSeq)
+
+        TempLong <- imageFiles[ ImageFilesSeq[i]: ImageFilesSeq[i+1]]
+        TempShort <-  imageFileShort[  ImageFilesSeq[i]: ImageFilesSeq[i+1]]
 
          # Load and preprocess the image
         file.copy(TempLong,
@@ -53,23 +59,23 @@
         nfiles <- test_ds$.length()
 
         # Load the test images
-        test_dl <- dataloader(test_ds, batch_size =1)
+        test_dl <- dataloader(test_ds, batch_size =batchSize)
 
         # Predict using Alexnet
         alexnetPred <- predict(modelAlexnetGunshot, test_dl)
         alexnetProb <- torch_sigmoid(alexnetPred)
         alexnetProb <- 1-as_array(torch_tensor(alexnetProb,device = 'cpu'))
-        alexnetClass <- ifelse((alexnetProb) > 0.5, "gunshot", "noise")
+        alexnetClass <- ifelse((alexnetProb) > 0.85, "gunshot", "noise")
 
         # Predict using VGG19
         VGG19Pred <- predict(modelVGG19Gunshot, test_dl)
         VGG19Prob <- torch_sigmoid(VGG19Pred)
         VGG19Prob <- 1-as_array(torch_tensor(VGG19Prob,device = 'cpu'))
-        VGG19Class <- ifelse((VGG19Prob) > 0.5, "gunshot", "noise")
+        VGG19Class <- ifelse((VGG19Prob) > 0.85, "gunshot", "noise")
 
         # Add the results to output tables
-        outputTableAlexnet <- rbind(outputTableAlexnet, data.frame(Label = TempLong, Probability = alexnetProb, PredictedClass = alexnetClass, ActualClass=Folder[i]))
-        outputTableVGG19 <- rbind(outputTableVGG19, data.frame(Label = TempLong, Probability = VGG19Prob, PredictedClass = VGG19Class, ActualClass=Folder[i]))
+        outputTableAlexnet <- rbind(outputTableAlexnet, data.frame(Label = TempLong, Probability = alexnetProb, PredictedClass = alexnetClass, ActualClass=Folder[ImageFilesSeq[i]: ImageFilesSeq[i+1]]))
+        outputTableVGG19 <- rbind(outputTableVGG19, data.frame(Label = TempLong, Probability = VGG19Prob, PredictedClass = VGG19Class, ActualClass=Folder[ImageFilesSeq[i]: ImageFilesSeq[i+1]]))
 
         unlink('data/Temp/Images/Images', recursive = TRUE)
         dir.create('data/Temp/Images/Images')
@@ -80,19 +86,9 @@
 
       }
 
-      # Create ROCR curves
 
-      pred <- prediction( outputTableAlexnet$Probability, outputTableAlexnet$ActualClass)
-      pred
-      perf <- performance(pred,"f")
-      perf
-      plot(perf)
-
-      pred <- prediction( outputTableVGG19$Probability, outputTableVGG19$ActualClass)
-      pred
-      perf <- performance(pred,"f")
-      perf
-      plot(perf)
+      outputTableAlexnet$PredictedClass <-  ifelse(outputTableAlexnet$Probability > 0.85, "gunshot", "noise")
+      outputTableVGG19$PredictedClass <-  ifelse(outputTableVGG19$Probability > 0.85, "gunshot", "noise")
 
       # Create a confusion matrix
       caret::confusionMatrix(as.factor(outputTableAlexnet$PredictedClass),as.factor(outputTableAlexnet$ActualClass), mode='everything')

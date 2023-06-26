@@ -9,15 +9,17 @@ library(tuneR)
 library(seewave)
 library(gibbonR)
 
+# Note: This can be used to run over entire sound files
+
 # Load pre-trained models
 #modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
 #modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
 
 # Set path to BoxDrive
-BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/TestWavs',
+BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance',
                            full.names = T, pattern='wav')
 
-BoxDrivePathShort <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/TestWavs',
+BoxDrivePathShort <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance',
                            full.names = F, pattern='wav')
 
 BoxDrivePathShort <- str_split_fixed(BoxDrivePathShort,pattern = '.wav',n=2)[,1]
