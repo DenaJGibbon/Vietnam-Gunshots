@@ -70,8 +70,3 @@ authors for providing the framework for deep learning in R with PyTorch.
 Keydana, Sigrid. Deep Learning and Scientific Computing with R torch.
 CRC Press, 2023.
 <https://skeydan.github.io/Deep-Learning-and-Scientific-Computing-with-R-torch/>
-
-Note to self:
-
-re-rerun with a few more epochs (perhaps 3)? Want to add other gunshot
-training data (?) It did not work well when using as test data
