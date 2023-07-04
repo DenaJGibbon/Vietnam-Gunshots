@@ -24,7 +24,7 @@ The dataset used for training, validation, and testing is obtained from sound cl
 
 ## Training
 
-The training process involves fine-tuning the pretrained AlexNet or VGG16 model by freezing the feature extraction layers and training new classifier layers. The model is set up with a binary cross-entropy loss function and the Adam optimizer. Training is performed for 20 epochs with early stopping enabled to prevent overfitting. Additionally, a learning rate scheduler is used to adjust the learning rate during training.
+The training process involves fine-tuning the pretrained AlexNet or VGG16 models by training new classifier layers. The model is set up with a binary cross-entropy loss function and the Adam optimizer. Training is performed for 1-3 epochs or 20 epochs with early stopping enabled to prevent overfitting. 
 
 The trained model is saved for future use.
 
@@ -34,20 +34,61 @@ To evaluate the performance of the trained model, the test dataset is used. The 
 
 ## Usage
 
-To use the trained model for inference, load the saved model using the 'luz_load' function. Then, preprocess the input image(s) in the same way as during training and pass them to the model for prediction. The output will be the predicted class label or probability.
+To use the trained model for predictions, load the saved model using the 'luz_load' function. Then, preprocess the input image(s) in the same way as during training and pass them to the model for prediction. The output will be the predicted class label or probability.
 
 ```R
+# Load libraries
+library(luz)
+library(torch)
+library(torchvision)
+library(torchdatasets)
+library(stringr)
+
 # Load the saved model
-model <- luz_load("modelAlexnetGunshot.pt")
+modelAlexnetGunshot <- luz_load("_train_1_modelAlexnet.pt")
 
-# Preprocess the input image(s)
-# ...
+# Set the input directory for the test images
+test.input <- 'data/images/test'
 
-# Pass the preprocessed image(s) to the model for prediction
-predictions <- predict(model, input_images)
+# Get the list of image files
+imageFileShort <- list.files(test.input, recursive = TRUE, full.names = FALSE)
 
-# Process the predictions
-# ...
+# Identify just the class from folder structure
+ActualClass <- str_split_fixed( imageFileShort,pattern = '/',n=2)[,1]
+
+# Create a dataset from the image folder
+test_ds <- image_folder_dataset(
+  file.path(test.input),
+  transform = . %>%
+    torchvision::transform_to_tensor() %>%  # Convert images to tensors
+    torchvision::transform_resize(size = c(224, 224)) %>%  # Resize images to 224x224 pixels
+    torchvision::transform_normalize(mean = c(0.485, 0.456, 0.406), std = c(0.229, 0.224, 0.225)),  # Normalize the image tensor
+  target_transform = function(x) as.double(x) - 1  # Transform the target variable to be zero-based
+)
+
+# Get the number of test files
+nfiles <- test_ds$.length()
+
+# Create a dataloader for the test dataset with a specified batch size
+test_dl <- dataloader(test_ds, batch_size = nfiles)
+
+# Use the Alexnet model to predict the test images
+alexnetPred <- predict(modelAlexnetGunshot, test_dl)
+
+# Apply the sigmoid function to the predicted values
+alexnetProb <- torch_sigmoid(alexnetPred)
+
+# Convert the predicted probabilities to an R array and subtract from 1
+alexnetProb <- 1 - as_array(torch_tensor(alexnetProb, device = 'cpu'))
+
+# Classify the images as "gunshot" or "noise" based on a probability threshold
+alexnetPredictedClass <- ifelse((alexnetProb) > 0.85, "gunshot", "noise")
+
+# Create a confusion matrix
+AlexnetPerf <- caret::confusionMatrix(as.factor(alexnetPredictedClass),as.factor(ActualClass), mode='everything')
+
+print(AlexnetPerf$table)
+
 ```
 
 ## Acknowledgments

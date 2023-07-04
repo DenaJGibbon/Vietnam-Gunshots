@@ -23,7 +23,7 @@ ListWavFilesShort <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/G
 ListWavFilesShort <- str_split_fixed(ListWavFilesShort,pattern = '.wav',n=2)[,1]
 
 # Prepare clips
-for( a in 40: length(ListSelectionTables)){
+for( a in 1: length(ListSelectionTables)){
   print(paste('processing', a, 'out of',length(ListSelectionTables)))
   TempSelection <- read.delim( ListSelectionTables[a])
   TempWav <- readWave(ListWavFiles[a])

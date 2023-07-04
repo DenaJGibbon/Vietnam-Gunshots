@@ -17,16 +17,17 @@ library(gibbonR)
 modelAlexnetGunshot <- luz_load("output/_train_1_modelAlexnet.pt")
 
 # Set path to BoxDrive
-BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance',
+BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/',
                            full.names = T, pattern='wav')
 
-BoxDrivePathShort <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance',
+BoxDrivePathShort <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/',
                            full.names = F, pattern='wav')
 
 BoxDrivePathShort <- str_split_fixed(BoxDrivePathShort,pattern = '.wav',n=2)[,1]
 
 clip.duration <- 4
 hop.size <- 3
+
 
     for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
       RavenSelectionTableDFAlexnet <- data.frame()
@@ -62,6 +63,11 @@ hop.size <- 3
       length.files <- seq(1,length,100)
 
       for(q in 1: (length(length.files)-1) ){
+        unlink('data/Temp/WavFiles', recursive = TRUE)
+        unlink('data/Temp/Images/Images', recursive = TRUE)
+
+        dir.create('data/Temp/WavFiles')
+        dir.create('data/Temp/Images/Images')
 
         RandomSub <-  seq(length.files[q],length.files[q+1],1)
 
@@ -132,7 +138,7 @@ hop.size <- 3
         # Calculate the probability associated with each class
         Probability <- alexnetProb
 
-        OutputFolder <- 'data/Detections/Alexnet/'
+        OutputFolder <- 'data/Detections/AlexnetAllFiles/'
 
         image.files <- list.files(file.path(test.input),recursive = T,
                                   full.names = T)
@@ -224,7 +230,7 @@ hop.size <- 3
             csv.file.name <-
               paste('data/',
                     BoxDrivePathShort[x],
-                    'GunshotAlexNETFinalPerformance.txt',
+                    'GunshotAlexNETAllFiles.txt',
                     sep = '')
 
             write.table(
@@ -241,11 +247,6 @@ hop.size <- 3
 
 
 }
-        unlink('data/Temp/WavFiles', recursive = TRUE)
-        unlink('data/Temp/Images/Images', recursive = TRUE)
-
-        dir.create('data/Temp/WavFiles')
-        dir.create('data/Temp/Images/Images')
       }
 
 
