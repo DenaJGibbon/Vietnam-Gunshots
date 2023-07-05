@@ -43,6 +43,7 @@ library(torch)
 library(torchvision)
 library(torchdatasets)
 library(stringr)
+library(caret)
 
 # Load the saved model
 modelAlexnetGunshot <- luz_load("_train_1_modelAlexnet.pt")
