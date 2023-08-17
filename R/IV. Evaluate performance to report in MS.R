@@ -5,13 +5,13 @@ library(dplyr)
 Annotated.files <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance',
            pattern='.txt',full.names = T)
 
-Prediction.files <- list.files('/Users/denaclink/Desktop/RStudio Projects/Vietnam-Gunshots/data/DetectionSelections/AlexNetFrozen1epoch',
+Prediction.files <- list.files('data/DetectionSelections/AlexNetFrozen1epoch',
                                pattern='.txt',full.names = T)
 
 
 
-annotation_file <- Annotated.files[[2]]
-prediction_file  <- Prediction.files[[2]]
+annotation_file <- Annotated.files[[1]]
+prediction_file  <- Prediction.files[[1]]
 
 threshold <- .9
 # Function to evaluate model performance
