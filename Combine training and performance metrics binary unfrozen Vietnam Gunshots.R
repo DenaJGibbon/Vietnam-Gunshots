@@ -20,21 +20,21 @@ to_device <- function(x, device) {
 }
 
 # Location of spectrogram images for training 
-input.data <-  c('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/images')
+input.data <-  c('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/images_trainaddedclean/')
 
 # Location of spectrogram images for testing
-test.data <- c('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/images/')
+test.data <- c('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/images_trainaddedclean/')
 
 # Location to save the out
-output.data.path <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/output_frozenbin/'
+output.data.path <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/output_frozenbin_trainaddedclean/'
 
 # Whether to unfreeze the layers
 unfreeze.param <- FALSE # FALSE means the features are frozen; TRUE unfrozen
 
 # Number of epochs to include
-epoch.iterations <- c(1,2,3,4,5,20)
+epoch.iterations <- c(1,2,3,4,5)
 
-trainingfolder <- 'images'
+trainingfolder <- 'images_trainaddedclean'
 
 # Create metadata
 metadata <- tibble(
@@ -289,7 +289,7 @@ VGG19Probdf <- data.frame()
 
 
   test_ds <- image_folder_dataset(
-    file.path(test.data, "test/"),
+    file.path(test.data, "finaltest/"),
     transform = . %>%
       torchvision::transform_to_tensor() %>%
       torchvision::transform_resize(size = c(224, 224)) %>%
@@ -299,10 +299,10 @@ VGG19Probdf <- data.frame()
   
   # Predict the test files
   # Variable indicating the number of files
-  nfiles <- test_ds$.length()
+  #nfiles <- test_ds$.length()
   
   # Load the test images
-  test_dl <- dataloader(test_ds, batch_size = nfiles)
+  test_dl <- dataloader(test_ds, batch_size = 32, shuffle = F)
   
   # Predict using AlexNet
   AlexNetPred <- predict(modelAlexNetGunshot, test_dl)
@@ -326,10 +326,6 @@ VGG19Probdf <- data.frame()
   outputTableAlexNet <- rbind(outputTableAlexNet, data.frame(Label = Folder, Probability = AlexNetProb, PredictedClass = AlexNetClass, ActualClass = Folder))
   outputTableVGG16 <- rbind(outputTableVGG16, data.frame(Label = Folder, Probability = VGG16Prob, PredictedClass = VGG16Class, ActualClass = Folder))
   outputTableVGG19 <- rbind(outputTableVGG19, data.frame(Label = Folder, Probability = VGG19Prob, PredictedClass = VGG19Class, ActualClass = Folder))
-  
-  # Save false positives to train next iteration
-  # file.copy(Folder[which(AlexNetProb > 0.9)],
-  #           to= paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/Temp/Images/Images/',TempShort[which(AlexNetProb > 0.9)], sep=''))
   
   
   # Save the output tables as CSV files
@@ -443,7 +439,7 @@ for (threshold in thresholds) {
 TransferLearningCNNDF <- rbind.data.frame(TransferLearningCNNDF, CombinedTempRow)
 TransferLearningCNNDF$Frozen <- unfreeze.param
 # Write the result to a CSV file
-filename <- paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/output_frozenbin/performance_tables/', trainingfolder, '_', n.epoch,'_', '_TransferLearningCNNDFAlexNetVGG16.csv', sep = '')
+filename <- paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/output_frozenbin_trainaddedclean/performance_tables/', trainingfolder, '_', n.epoch,'_', '_TransferLearningCNNDFAlexNetVGG16.csv', sep = '')
 write.csv(TransferLearningCNNDF, filename, row.names = FALSE)
 
 rm(modelAlexNetGunshot)
@@ -523,7 +519,7 @@ fitted <- model %>%
           epochs=n.epoch,
           steps_per_epoch = length(train_dl),
           call_on = "on_batch_end"),
-        #luz_callback_model_checkpoint(path = "output_frozenbin/"),
+        #luz_callback_model_checkpoint(path = "output_frozenbin_trainaddedclean/"),
         luz_callback_csv_logger(paste( output.data.path,trainingfolder,n.epoch,"logs_ResNet18.csv",sep='_'))
       ),
       verbose = TRUE)
@@ -585,7 +581,7 @@ fitted <- model %>%
           epochs=n.epoch,
           steps_per_epoch = length(train_dl),
           call_on = "on_batch_end"),
-        #luz_callback_model_checkpoint(path = "output_frozenbin/"),
+        #luz_callback_model_checkpoint(path = "output_frozenbin_trainaddedclean/"),
         luz_callback_csv_logger(paste( output.data.path,trainingfolder,n.epoch, "logs_ResNet50.csv",sep='_'))
       ),
       verbose = TRUE)
@@ -645,7 +641,7 @@ fitted <- model %>%
           epochs=n.epoch,
           steps_per_epoch = length(train_dl),
           call_on = "on_batch_end"),
-        #luz_callback_model_checkpoint(path = "output_frozenbin/"),
+        #luz_callback_model_checkpoint(path = "output_frozenbin_trainaddedclean/"),
         luz_callback_csv_logger(paste( output.data.path,trainingfolder,n.epoch, "logs_ResNet152.csv",sep='_'))
       ),
       verbose = TRUE)
@@ -686,7 +682,7 @@ ResNet152Probdf <- data.frame()
 
 
   test_ds <- image_folder_dataset(
-    file.path(test.data, "test/"),
+    file.path(test.data, "finaltest/"),
     transform = . %>%
       torchvision::transform_to_tensor() %>%
       transform_resize(256) %>%
@@ -697,10 +693,11 @@ ResNet152Probdf <- data.frame()
   
   # Predict the test files
   # Variable indicating the number of files
-  nfiles <- test_ds$.length()
+  #nfiles <- test_ds$.length()
   
   # Load the test images
-  test_dl <- dataloader(test_ds, batch_size = nfiles)
+  test_dl <- dataloader(test_ds, batch_size = 32, shuffle = F)
+  
   
   # Predict using ResNet18
   ResNet18Pred <- predict(modelResNet18Gunshot, test_dl)
@@ -843,7 +840,7 @@ for (threshold in thresholds) {
 TransferLearningCNNDF <- rbind.data.frame(TransferLearningCNNDF, CombinedTempRow)
 TransferLearningCNNDF$Frozen <- unfreeze.param
 # Write the result to a CSV file
-filename <- paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/output_frozenbin/performance_tables/', trainingfolder, '_', n.epoch, '_', '_TransferLearningCNNDFResNet.csv', sep = '')
+filename <- paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/output_frozenbin_trainaddedclean/performance_tables/', trainingfolder, '_', n.epoch, '_', '_TransferLearningCNNDFResNet.csv', sep = '')
 write.csv(TransferLearningCNNDF, filename, row.names = FALSE)
 
 rm(modelResNet18Gunshot)
