@@ -20,13 +20,13 @@ to_device <- function(x, device) {
 }
 
 # Location of spectrogram images for training 
-input.data <-  c('/Users/denaclink/Desktop/RStudioProjects/Multi-species-detector/data/imagesmalaysiaHQ/')
+input.data <-  c('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/images/')
 
 # Location of spectrogram images for testing
-test.data <- c('/Users/denaclink/Desktop/RStudioProjects/Multi-species-detector/data/imagesmalaysiamaliau/')
+test.data <- c('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/images/combinedtest')
 
 # Training data folder short
-trainingfolder <- 'imagesmalaysiaHQ'
+trainingfolder <- 'images'
 
 # Whether to unfreeze the layers
 unfreeze.param <- TRUE # FALSE means the features are frozen; TRUE unfrozen
@@ -35,7 +35,7 @@ unfreeze.param <- TRUE # FALSE means the features are frozen; TRUE unfrozen
 epoch.iterations <- c(1,2,3,4,5,20)
 
 # Location to save the out
-output.data.path <-paste('/Users/denaclink/Desktop/RStudioProjects/Multi-species-detector/data/','output','unfrozen',unfreeze.param,trainingfolder,'/', sep='_')
+output.data.path <-paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/','output','unfrozen',unfreeze.param,trainingfolder,'/', sep='_')
 
 # Create if doesn't exist
 dir.create(output.data.path)
@@ -107,9 +107,8 @@ for(b in 1:length(epoch.iterations)){
       )
     },
     forward = function(x) {
-      output <- self$model(x)
-      torch_squeeze(output, dim=2)
-    }
+    self$model(x)[,1]
+  }
     
   )
   
@@ -126,7 +125,7 @@ for(b in 1:length(epoch.iterations)){
   
   
   
-  modelAlexNetGibbon <- fitted %>%
+  modelAlexNetGunshot <- fitted %>%
     fit(train_dl,epochs=n.epoch, valid_data = valid_dl,
         callbacks = list(
           luz_callback_early_stopping(patience = 2),
@@ -142,8 +141,8 @@ for(b in 1:length(epoch.iterations)){
         verbose = TRUE)
   
   # Save model output
-  luz_save(modelAlexNetGibbon, paste( output.data.path,trainingfolder,n.epoch, "modelAlexNet.pt",sep='_'))
-  #modelAlexNetGibbon <- luz_load( paste( output.data.path,trainingfolder,n.epoch, "modelAlexNet.pt",sep='_'))
+  luz_save(modelAlexNetGunshot, paste( output.data.path,trainingfolder,n.epoch, "modelAlexNet.pt",sep='_'))
+  #modelAlexNetGunshot <- luz_load( paste( output.data.path,trainingfolder,n.epoch, "modelAlexNet.pt",sep='_'))
   
   TempCSV.AlexNet <-  read.csv(paste( output.data.path,trainingfolder,n.epoch, "logs_AlexNet.csv",sep='_'))
   
@@ -171,8 +170,7 @@ for(b in 1:length(epoch.iterations)){
       )
     },
     forward = function(x) {
-      output <- self$model(x)
-      torch_squeeze(output, dim=2)
+      self$model(x)[,1]
     }
   )
   
@@ -186,7 +184,7 @@ for(b in 1:length(epoch.iterations)){
     )
   
   
-  modelVGG16Gibbon <- fitted %>%
+  modelVGG16Gunshot <- fitted %>%
     fit(train_dl,epochs=n.epoch, valid_data = valid_dl,
         callbacks = list(
           luz_callback_early_stopping(patience = 2),
@@ -203,7 +201,7 @@ for(b in 1:length(epoch.iterations)){
         verbose = TRUE)
   
   # Save model output
-  luz_save(modelVGG16Gibbon, paste( output.data.path,trainingfolder,n.epoch, "modelVGG16.pt",sep='_'))
+  luz_save(modelVGG16Gunshot, paste( output.data.path,trainingfolder,n.epoch, "modelVGG16.pt",sep='_'))
   
   
   TempCSV.VGG16 <- read.csv(paste( output.data.path,trainingfolder,n.epoch, "logs_VGG16.csv",sep='_'))
@@ -231,8 +229,7 @@ for(b in 1:length(epoch.iterations)){
       )
     },
     forward = function(x) {
-      output <- self$model(x)
-      torch_squeeze(output, dim=2)
+      self$model(x)[,1]
     }
   )
   
@@ -246,7 +243,7 @@ for(b in 1:length(epoch.iterations)){
     )
   
   
-  modelVGG19Gibbon <- fitted %>%
+  modelVGG19Gunshot <- fitted %>%
     fit(train_dl,epochs=n.epoch, valid_data = valid_dl,
         callbacks = list(
           luz_callback_early_stopping(patience = 2),
@@ -263,7 +260,7 @@ for(b in 1:length(epoch.iterations)){
         verbose = TRUE)
   
   # Save model output
-  luz_save(modelVGG19Gibbon, paste( output.data.path,trainingfolder,n.epoch, "modelVGG19.pt",sep='_'))
+  luz_save(modelVGG19Gunshot, paste( output.data.path,trainingfolder,n.epoch, "modelVGG19.pt",sep='_'))
   
   
   TempCSV.VGG19 <- read.csv(paste( output.data.path,trainingfolder,n.epoch, "logs_VGG19.csv",sep='_'))
@@ -274,10 +271,10 @@ for(b in 1:length(epoch.iterations)){
   dir.create(paste(output.data.path,'performance_tables',sep=''))
   
   # Get the list of image files
-  imageFiles <- list.files(paste(test.data,'/','test',sep=''), recursive = TRUE, full.names = TRUE)
+  imageFiles <- list.files(test.data, recursive = TRUE, full.names = TRUE)
   
   # Get the list of image files
-  imageFileShort <- list.files(paste(test.data,'/','test',sep=''), recursive = TRUE, full.names = FALSE)
+  imageFileShort <- list.files(test.data, recursive = TRUE, full.names = FALSE)
   
   Folder <- str_split_fixed( imageFileShort,pattern = '/',n=2)[,1]
   
@@ -297,7 +294,7 @@ for(b in 1:length(epoch.iterations)){
   
   
   test_ds <- image_folder_dataset(
-    file.path(test.data, "test/"),
+    file.path(test.data),
     transform = . %>%
       torchvision::transform_to_tensor() %>%
       torchvision::transform_resize(size = c(224, 224)) %>%
@@ -313,22 +310,22 @@ for(b in 1:length(epoch.iterations)){
   test_dl <- dataloader(test_ds, batch_size = 32, shuffle = F)
   
   # Predict using AlexNet
-  AlexNetPred <- predict(modelAlexNetGibbon, test_dl)
+  AlexNetPred <- predict(modelAlexNetGunshot, test_dl)
   AlexNetProb <- torch_sigmoid(AlexNetPred)
   AlexNetProb <- as_array(torch_tensor(AlexNetProb, device = 'cpu'))
-  AlexNetClass <- ifelse((AlexNetProb) < 0.5, "Gibbons", "Noise")
+  AlexNetClass <- ifelse((AlexNetProb) < 0.5, "gunshot", "noise")
   
   # Predict using VGG16
-  VGG16Pred <- predict(modelVGG16Gibbon, test_dl)
+  VGG16Pred <- predict(modelVGG16Gunshot, test_dl)
   VGG16Prob <- torch_sigmoid(VGG16Pred)
   VGG16Prob <- as_array(torch_tensor(VGG16Prob, device = 'cpu'))
-  VGG16Class <- ifelse((VGG16Prob) < 0.5, "Gibbons", "Noise")
+  VGG16Class <- ifelse((VGG16Prob) < 0.5, "gunshot", "noise")
   
   # Predict using VGG19
-  VGG19Pred <- predict(modelVGG19Gibbon, test_dl)
+  VGG19Pred <- predict(modelVGG19Gunshot, test_dl)
   VGG19Prob <- torch_sigmoid(VGG19Pred)
   VGG19Prob <- as_array(torch_tensor(VGG19Prob, device = 'cpu'))
-  VGG19Class <- ifelse((VGG19Prob) < 0.5, "Gibbons", "Noise")
+  VGG19Class <- ifelse((VGG19Prob) < 0.5, "gunshot", "noise")
   
   # Add the results to output tables
   outputTableAlexNet <- rbind(outputTableAlexNet, data.frame(Label = Folder, Probability = AlexNetProb, PredictedClass = AlexNetClass, ActualClass = Folder))
@@ -350,7 +347,7 @@ for(b in 1:length(epoch.iterations)){
   
   for (threshold in thresholds) {
     # AlexNet
-    AlexNetPredictedClass <- ifelse((outputTableAlexNet$Probability) < threshold, "Gibbons", "Noise")
+    AlexNetPredictedClass <- ifelse((outputTableAlexNet$Probability) < threshold, "gunshot", "noise")
     
     AlexNetPerf <- caret::confusionMatrix(
       as.factor(AlexNetPredictedClass),
@@ -379,7 +376,7 @@ for(b in 1:length(epoch.iterations)){
     TempRowAlexNet$Threshold <- as.character(threshold)
     
     # VGG16
-    VGG16PredictedClass <- ifelse((outputTableVGG16$Probability) < threshold, "Gibbons", "Noise")
+    VGG16PredictedClass <- ifelse((outputTableVGG16$Probability) < threshold, "gunshot", "noise")
     
     VGG16Perf <- caret::confusionMatrix(
       as.factor(VGG16PredictedClass),
@@ -408,7 +405,7 @@ for(b in 1:length(epoch.iterations)){
     TempRowVGG16$Threshold <- as.character(threshold)
     
     # VGG19
-    VGG19PredictedClass <- ifelse((outputTableVGG19$Probability) < threshold, "Gibbons", "Noise")
+    VGG19PredictedClass <- ifelse((outputTableVGG19$Probability) < threshold, "gunshot", "noise")
     
     VGG19Perf <- caret::confusionMatrix(
       as.factor(VGG19PredictedClass),
@@ -450,9 +447,9 @@ for(b in 1:length(epoch.iterations)){
   filename <- paste(output.data.path,'performance_tables/', trainingfolder, '_', n.epoch, '_', '_TransferLearningCNNDFAlexNETVGG16.csv', sep = '')
   write.csv(TransferLearningCNNDF, filename, row.names = FALSE)
   
-  rm(modelAlexNetGibbon)
-  rm(modelVGG16Gibbon)
-  rm(modelVGG19Gibbon)
+  rm(modelAlexNetGunshot)
+  rm(modelVGG16Gunshot)
+  rm(modelVGG19Gunshot)
   
   
   # Start ResNet ------------------------------------------------------------
@@ -499,8 +496,7 @@ for(b in 1:length(epoch.iterations)){
       )
     },
     forward = function(x) {
-      output <- self$model(x)
-      torch_squeeze(output, dim=2)
+      self$model(x)[,1]
     }
   )
   
@@ -533,12 +529,12 @@ for(b in 1:length(epoch.iterations)){
         verbose = TRUE)
   
   # Save model output
-  modelResNet18Gibbon <- fitted
+  modelResNet18Gunshot <- fitted
   
   # Save model output
-  luz_save(modelResNet18Gibbon, paste( output.data.path,trainingfolder,n.epoch, "modelResNet18.pt",sep='_'))
-  #modelResNet18Gibbon <- luz_load("modelResNet18Gibbon1epochs.pt")
-  
+  luz_save(modelResNet18Gunshot, paste( output.data.path,trainingfolder,n.epoch, "modelResNet18.pt",sep='_'))
+  #modelResNet18Gunshot <- luz_load("modelResNet18Gunshot1epochs.pt")
+  modelResNet18Gunshot <- luz_load(paste( output.data.path,trainingfolder,n.epoch, "modelResNet18.pt",sep='_'))
   TempCSV.ResNet18 <-  read.csv(paste( output.data.path,trainingfolder,n.epoch, "logs_ResNet18.csv",sep='_'))
   
   ResNet18.loss <- TempCSV.ResNet18[nrow(TempCSV.ResNet18),]$loss
@@ -561,8 +557,7 @@ for(b in 1:length(epoch.iterations)){
       )
     },
     forward = function(x) {
-      output <- self$model(x)
-      torch_squeeze(output, dim=2)
+      self$model(x)[,1]
     }
   )
   
@@ -595,11 +590,11 @@ for(b in 1:length(epoch.iterations)){
         verbose = TRUE)
   
   # Save model output
-  modelResNet50Gibbon <- fitted
+  modelResNet50Gunshot <- fitted
   
   # Save model output
-  luz_save(modelResNet50Gibbon, paste( output.data.path,trainingfolder,n.epoch, "modelResNet50.pt",sep='_'))
-  #modelResNet50Gibbon <- luz_load("modelResNet50Gibbon1epochs.pt")
+  luz_save(modelResNet50Gunshot, paste( output.data.path,trainingfolder,n.epoch, "modelResNet50.pt",sep='_'))
+  #modelResNet50Gunshot <- luz_load("modelResNet50Gunshot1epochs.pt")
   
   TempCSV.ResNet50 <-  read.csv(paste( output.data.path,trainingfolder,n.epoch, "logs_ResNet50.csv",sep='_'))
   
@@ -621,8 +616,7 @@ for(b in 1:length(epoch.iterations)){
       )
     },
     forward = function(x) {
-      output <- self$model(x)
-      torch_squeeze(output, dim=2)
+      self$model(x)[,1]
     }
   )
   
@@ -655,11 +649,11 @@ for(b in 1:length(epoch.iterations)){
         verbose = TRUE)
   
   # Save model output
-  modelResNet152Gibbon <- fitted
+  modelResNet152Gunshot <- fitted
   
   # Save model output
-  luz_save(modelResNet152Gibbon, paste( output.data.path,trainingfolder,n.epoch, "modelResNet152.pt",sep='_'))
-  #modelResNet152Gibbon <- luz_load("modelResNet152Gibbon1epochs.pt")
+  luz_save(modelResNet152Gunshot, paste( output.data.path,trainingfolder,n.epoch, "modelResNet152.pt",sep='_'))
+  #modelResNet152Gunshot <- luz_load("modelResNet152Gunshot1epochs.pt")
   
   TempCSV.ResNet152 <-  read.csv(paste( output.data.path,trainingfolder,n.epoch, "logs_ResNet152.csv",sep='_'))
   
@@ -668,10 +662,10 @@ for(b in 1:length(epoch.iterations)){
   # Calculate performance metrics -------------------------------------------
   
   # Get the list of image files
-  imageFiles <- list.files(paste(test.data,'/','test',sep=''), recursive = TRUE, full.names = TRUE)
+  imageFiles <- list.files(test.data, recursive = TRUE, full.names = TRUE)
   
   # Get the list of image files
-  imageFileShort <- list.files(paste(test.data,'/','test',sep=''), recursive = TRUE, full.names = FALSE)
+  imageFileShort <- list.files(test.data, recursive = TRUE, full.names = FALSE)
   
   Folder <- str_split_fixed( imageFileShort,pattern = '/',n=2)[,1]
   
@@ -688,7 +682,7 @@ for(b in 1:length(epoch.iterations)){
   
   
   test_ds <- image_folder_dataset(
-    file.path(test.data, "test/"),
+    file.path(test.data),
     transform = . %>%
       torchvision::transform_to_tensor() %>%
       transform_resize(256) %>%
@@ -706,22 +700,22 @@ for(b in 1:length(epoch.iterations)){
   
   
   # Predict using ResNet18
-  ResNet18Pred <- predict(modelResNet18Gibbon, test_dl)
+  ResNet18Pred <- predict(modelResNet18Gunshot, test_dl)
   ResNet18Prob <- torch_sigmoid(ResNet18Pred)
   ResNet18Prob <- as_array(torch_tensor(ResNet18Prob, device = 'cpu'))
-  ResNet18Class <- ifelse((ResNet18Prob) < 0.5, "Gibbons", "Noise")
+  ResNet18Class <- ifelse((ResNet18Prob) < 0.5, "gunshot", "noise")
   
   # Predict using ResNet50
-  ResNet50Pred <- predict(modelResNet50Gibbon, test_dl)
+  ResNet50Pred <- predict(modelResNet50Gunshot, test_dl)
   ResNet50Prob <- torch_sigmoid(ResNet50Pred)
   ResNet50Prob <- as_array(torch_tensor(ResNet50Prob, device = 'cpu'))
-  ResNet50Class <- ifelse((ResNet50Prob) < 0.5, "Gibbons", "Noise")
+  ResNet50Class <- ifelse((ResNet50Prob) < 0.5, "gunshot", "noise")
   
   # Predict using ResNet152
-  ResNet152Pred <- predict(modelResNet152Gibbon, test_dl)
+  ResNet152Pred <- predict(modelResNet152Gunshot, test_dl)
   ResNet152Prob <- torch_sigmoid(ResNet152Pred)
   ResNet152Prob <- as_array(torch_tensor(ResNet152Prob, device = 'cpu'))
-  ResNet152Class <- ifelse((ResNet152Prob) < 0.5, "Gibbons", "Noise")
+  ResNet152Class <- ifelse((ResNet152Prob) < 0.5, "gunshot", "noise")
   
   # Add the results to output tables
   outputTableResNet18 <- rbind(outputTableResNet18, data.frame(Label = Folder, Probability = ResNet18Prob, PredictedClass = ResNet18Class, ActualClass = Folder))
@@ -730,7 +724,7 @@ for(b in 1:length(epoch.iterations)){
   
   # Save false positives to train next iteration
   # file.copy(Folder[which(ResNet18Prob > 0.9)],
-  #           to = paste('/Users/denaclink/Desktop/RStudioProjects/Multi-species-detector/data/Temp/Images/Images/', TempShort[which(ResNet18Prob > 0.9)], sep = ''))
+  #           to = paste('/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/data/Temp/Images/Images/', TempShort[which(ResNet18Prob > 0.9)], sep = ''))
   
   
   # Save the output tables as CSV files
@@ -749,7 +743,7 @@ for(b in 1:length(epoch.iterations)){
   
   for (threshold in thresholds) {
     # ResNet18
-    ResNet18PredictedClass <- ifelse((outputTableResNet18$Probability) < threshold, "Gibbons", "Noise")
+    ResNet18PredictedClass <- ifelse((outputTableResNet18$Probability) < threshold, "gunshot", "noise")
     
     ResNet18Perf <- caret::confusionMatrix(
       as.factor(ResNet18PredictedClass),
@@ -778,7 +772,7 @@ for(b in 1:length(epoch.iterations)){
     TempRowResNet18$Threshold <- as.character(threshold)
     
     # ResNet50
-    ResNet50PredictedClass <- ifelse((outputTableResNet50$Probability) < threshold, "Gibbons", "Noise")
+    ResNet50PredictedClass <- ifelse((outputTableResNet50$Probability) < threshold, "gunshot", "noise")
     
     ResNet50Perf <- caret::confusionMatrix(
       as.factor(ResNet50PredictedClass),
@@ -807,7 +801,7 @@ for(b in 1:length(epoch.iterations)){
     TempRowResNet50$Threshold <- as.character(threshold)
     
     # ResNet152
-    ResNet152PredictedClass <- ifelse((outputTableResNet152$Probability) < threshold, "Gibbons", "Noise")
+    ResNet152PredictedClass <- ifelse((outputTableResNet152$Probability) < threshold, "gunshot", "noise")
     
     ResNet152Perf <- caret::confusionMatrix(
       as.factor(ResNet152PredictedClass),
@@ -849,9 +843,9 @@ for(b in 1:length(epoch.iterations)){
   filename <- paste(output.data.path,'performance_tables/', trainingfolder, '_', n.epoch, '_', '_TransferLearningCNNDFResNet.csv', sep = '')
   write.csv(TransferLearningCNNDF, filename, row.names = FALSE)
   
-  rm(modelResNet18Gibbon)
-  rm(modelResNet50Gibbon)
-  rm(modelResNet152Gibbon)
+  rm(modelResNet18Gunshot)
+  rm(modelResNet50Gunshot)
+  rm(modelResNet152Gunshot)
 }
 
 
