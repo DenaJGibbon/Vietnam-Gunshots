@@ -89,45 +89,78 @@ for( a in 1: length(ListSelectionTables)){
 
 
 # Create images for training ----------------------------------------------
+devtools::load_all("/Users/denaclink/Desktop/RStudioProjects/gibbonNetR")
+
 # Image creation -----------------------------------------------
-TrainingFolders <- list.files('data/clips',full.names = T)
-TrainingFoldersShort <- list.files('data/clips',full.names = F)
-OutputFolder <- 'data/images'
-FolderVec <- c('train','valid','test') # Need to create these folders
 
-for(z in 1:length(TrainingFolders)){
-  SoundFiles <- list.files(TrainingFolders[z], recursive = T,full.names = T)
-  SoundFilesShort <- list.files(TrainingFolders[z], recursive = T,full.names = F)
+# The splits are set to ensure all data (100%) goes into the relevant folder.
+gibbonNetR::spectrogram_images(
+  trainingBasePath = 'data/clips', #'/Volumes/DJC Files/Danum Deep Learning/TestClips', #
+  outputBasePath   = 'data/imagesvietnam/',
+  splits           = c(0.6, 0.2, 0.2)  # 0% training, 0% validation, 100% testing
+)
 
-  for(y in 1:length(SoundFiles)){
+# Load necessary libraries
+# This will be part of the package, so you may need to list these dependencies in your package DESCRIPTION file.
+library(stringr)
 
-    DataType <-  FolderVec[1]
+# Function to extract the relevant identifier from the filename
+extract_file_identifier <- function(filename) {
+  components <- str_split_fixed(filename, "_", n = 5)
+  identifier <- paste(components[,2], components[,3], sep = "_")
+  return(identifier)
+}
 
-     if (y%%5 == 0) {
-       DataType <-  FolderVec[2]
-     }
+# Load necessary libraries
 
-    if (y%%10 == 0) {
-      DataType <-  FolderVec[3]
+# Function to extract the relevant identifier from the filename
+extract_file_identifier <- function(filename) {
+  components <- str_split_fixed(filename, "_", n = 5)
+  identifier <- paste(components[,1],components[,2], components[,3], components[,4], sep = "_")
+  return(identifier)
+}
+
+# Main function to check for data leakage
+check_data_leakage <- function(rootDir) {
+  # Construct paths to the subdirectories
+  trainingDir <- file.path(rootDir, 'train')
+  validationDir <- file.path(rootDir, 'valid')
+  testDir <- file.path(rootDir, 'test')
+  
+  # Retrieve lists of files from the respective folders
+  trainFiles <- list.files(trainingDir, pattern = "\\.jpg$", full.names = FALSE, recursive = TRUE)
+  validationFiles <- list.files(validationDir, pattern = "\\.jpg$", full.names = FALSE, recursive = TRUE)
+  testFiles <- list.files(testDir, pattern = "\\.jpg$", full.names = FALSE, recursive = TRUE)
+  
+  # Extract identifiers for each file in the respective datasets
+  trainIds <- sapply(trainFiles, extract_file_identifier)
+  validationIds <- sapply(validationFiles, extract_file_identifier)
+  testIds <- sapply(testFiles, extract_file_identifier)
+  
+  # Check for data leakage
+  trainValidationOverlap <- trainIds[which(trainIds %in% validationIds)]
+  trainTestOverlap <- trainIds[which(trainIds %in% testIds)]
+  validationTestOverlap <- testIds[which(testIds %in% validationIds)]
+  
+  # Report findings
+  if (length(trainValidationOverlap) == 0 & length(trainTestOverlap) == 0 & length(validationTestOverlap) == 0) {
+    cat("No data leakage detected among the datasets.\n")
+  } else {
+    cat("Data leakage detected!\n")
+    if (length(trainValidationOverlap) > 0) {
+      cat("Overlap between training and validation datasets:\n", trainValidationOverlap, "\n")
     }
-
-    subset.directory <- paste(OutputFolder,DataType,TrainingFoldersShort[z],sep='/')
-
-    if (!dir.exists(subset.directory)){
-      dir.create(subset.directory)
-      print(paste('Created output dir',subset.directory))
-    } else {
-      print(paste(subset.directory,'already exists'))
+    
+    if (length(trainTestOverlap) > 0) {
+      cat("Overlap between training and test datasets:\n", trainTestOverlap, "\n")
     }
-    wav.rm <- str_split_fixed(SoundFilesShort[y],pattern='.wav',n=2)[,1]
-    jpeg(paste(subset.directory, '/', wav.rm,'.jpg',sep=''),res = 50)
-    temp.name <- SoundFiles[y]
-    short.wav <-readWave(temp.name)
-    seewave::spectro(short.wav,tlab='',flab='',axisX=F,axisY = F,flim=c(0,2),scale=F,grid=F,noisereduction=1)
-    graphics.off()
-
+    
+    if (length(validationTestOverlap) > 0) {
+      cat("Overlap between validation and test datasets:\n", validationTestOverlap, "\n")
+    }
   }
 }
 
-
+# Check for leakage
+check_data_leakage('data/imagesvietnam')
 
