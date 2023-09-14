@@ -1,86 +1,98 @@
-# Load required packages
-library(data.table)
-library(dplyr)
-library(ohun)
+  # Load required packages
+  library(data.table)
+  library(dplyr)
+  
+  
+  Annotated.files <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance/',
+                                full.names = T, pattern = '.txt')
+ 
+  ListDirs <- list.files('data/DetectionSelections',full.names = T)
+  
+  PerformanceDF <- data.frame()
+  threshold <- 0.9
+  for(k in 1:length(ListDirs)){
+    
+    Prediction.files <- list.files(ListDirs[k],
+                                  pattern='.txt',full.names = T)
+    
+    Prediction.files.short <- basename(Annotated.files)
+  
+    for( j in 1:length(Annotated.files)){
+    # Read files
+    annotation_file <- Annotated.files[[j]]  # Replace with actual index
+    prediction_file  <- Prediction.files[[j]]  # Replace with actual index
+    
 
-Annotated.files <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance',
-           pattern='.txt',full.names = T)
-
-Prediction.files <- list.files('data/DetectionSelections/AlexNetFrozen1epoch',
-                               pattern='.txt',full.names = T)
-
-
-
-annotation_file <- Annotated.files[[1]]
-prediction_file  <- Prediction.files[[1]]
-
-threshold <- .9
-# Function to evaluate model performance
-
-# Read annotation file
-  annotations <- fread(annotation_file)
-
-  # Read prediction file
-  predictions <- fread(prediction_file)
-
-  # Convert to data frames and rename columns
-  annotations <- as.data.frame(annotations[,c(4,5)])
-  colnames(annotations) <- c("start", "stop")
-
-  predictions <- as.data.frame(predictions[,c(4,5,8)])
-  colnames(predictions) <- c("start", "stop", "probability")
-
-  # Convert start and stop columns to numeric
-  annotations$start <- as.numeric(annotations$start)
-  annotations$stop <- as.numeric(annotations$stop)
-  predictions$start <- as.numeric(predictions$start)
-  predictions$stop <- as.numeric(predictions$stop)
-
-  # Filter predictions based on threshold
-  predictions <- predictions %>% filter(probability >= threshold)
-
-  # Initialize evaluation metrics
-  true_positives <- 0
-  false_positives <- 0
-  false_negatives <- 0
-
-  # Evaluate each annotation
-    annotation_start <- annotations$start
-    annotation_stop <- annotations$stop
-
-    # Check if there is a prediction that overlaps with the annotation
-    overlapping_predictions <- predictions %>%
-      filter(start <= annotation_stop & stop >= annotation_start)
-
-     Index <- which(predictions$start==overlapping_predictions$start)
-
-    # Remove the matched prediction from the list
-      predictions <- predictions[-Index, ]
-
-      true_positives <-  nrow(overlapping_predictions)
-
-      # Count remaining predictions as false positives
-     false_positives <- nrow(predictions)
-
-  # Calculate evaluation metrics
-  precision <- true_positives / (true_positives + false_positives)
-  recall <- true_positives / (true_positives + false_negatives)
-  f1_score <- 2 * precision * recall / (precision + recall)
-
-  # Print evaluation metrics
-  cat("Evaluation Metrics:\n")
-  cat("Precision:", precision, "\n")
-  cat("Recall:", recall, "\n")
-  cat("F1 Score:", f1_score, "\n")
-
-
-
-# Set the file paths for annotation and prediction
-#evaluate_model(annotation_file, prediction_file, threshold = 0.5)
-
-# File 1: F1=0.66, recall=1, precision=0.5
-  # File 2: F1=0.5, recall=1, precision=0.33
-
-  mean(c(0.66, 0.5)) # F1
-  mean(c(0.5, 0.33)) # Precision
-
+    
+    # Read annotation and prediction files
+    annotations <- fread(annotation_file)
+    predictions <- fread(prediction_file)
+    
+    # Rename and filter columns
+    annotations <- as.data.frame(annotations[,c(4,5)])
+    colnames(annotations) <- c("start", "stop")
+    
+    predictions <- as.data.frame(predictions[,c(4,5,8)])
+    colnames(predictions) <- c("start", "stop", "probability")
+    
+    # Filter based on threshold
+    predictions <- dplyr::filter(predictions, probability >= threshold)
+    
+    # Initialize counters
+    true_positives <- 0
+    false_positives <- 0
+    false_negatives <- 0
+    
+    # Loop through each annotation
+    for (i in 1:nrow(annotations)) {
+      annotation_start <- annotations$start[i]
+      annotation_stop <- annotations$stop[i]
+      
+      # Check for overlapping predictions
+      overlapping_predictions <- dplyr::filter(predictions, start <= annotation_stop & stop >= annotation_start)
+      
+      if (nrow(overlapping_predictions) > 0) {
+        true_positives <- true_positives + 1
+        index <- which(predictions$start == overlapping_predictions$start[1])
+        predictions <- predictions[-index,]
+      } else {
+        false_negatives <- false_negatives + 1
+      }
+    }
+    
+    # Remaining predictions are false positives
+    false_positives <- nrow(predictions)
+    
+    
+    # Calculate metrics
+    precision <- true_positives / (true_positives + false_positives)
+    recall <- true_positives / (true_positives + false_negatives)
+    if(is.na(precision) == FALSE ){
+    f1_score <- if ((precision + recall) == 0) 0 else 2 * precision * recall / (precision + recall)
+    } else {
+      f1_score <- 0
+    }
+    short_name <- Prediction.files.short[j]
+    
+    TempPerformance <-cbind.data.frame(precision,recall,f1_score,short_name)
+    TempPerformance$TrainingData <- basename(ListDirs[k])
+    PerformanceDF <- rbind.data.frame(PerformanceDF,TempPerformance)
+    # Print metrics
+    cat("Evaluation Metrics:\n")
+    cat("Precision:", precision, "\n")
+    cat("Recall:", recall, "\n")
+    cat("F1 Score:", f1_score, "\n")
+    
+  }
+  }
+  
+  mean(PerformanceDF$recall)
+  mean(PerformanceDF$precision)
+  mean(PerformanceDF$f1_score) 
+  
+  
+  
+  PerformanceDF %>%
+    group_by(TrainingData) %>%
+    summarise_at(vars(recall,precision,f1_score), list(mean = mean))
+  
