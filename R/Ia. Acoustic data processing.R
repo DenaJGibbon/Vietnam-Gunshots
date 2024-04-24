@@ -102,3 +102,27 @@ for(z in 1:length(ListWavFilesShort)){
 }
 
 ListMissingFiles
+
+
+# Combine Selection Tables ------------------------------------------------
+
+# List text files in directory
+ListSelectionTables <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis",
+                                  pattern = '.txt',full.names =T)
+
+ListSelectionTablesShort <- list.files("/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis",
+                                       pattern = '.txt',full.names =F)
+
+CombinedDF <- data.frame()
+# Combine in table
+for( a in 1: length(ListSelectionTables)){
+  print(paste('processing', a, 'out of',length(ListSelectionTables)))
+  TempSelection <- read.delim( ListSelectionTables[a])
+  TempSelection$Filename <- basename(ListSelectionTables[a])
+  CombinedDF <- rbind.data.frame(CombinedDF,TempSelection )
+}
+
+nrow(CombinedDF)
+
+write.csv(CombinedDF,'GunShotAnnotationsCombinedDF.csv',row.names = F)
+

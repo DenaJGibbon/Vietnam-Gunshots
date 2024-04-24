@@ -13,10 +13,11 @@ library(seewave)
 
 # Load pre-trained models
 # Based on the top performing model for each data type
-modelAlexnetGunshot <- luz_load("data/_output_unfrozen_TRUE_imagesvietnam_belize_/_imagesvietnam_belize_1_modelalexNet.pt")
+modelAlexnetGunshot <- luz_load("data/_output_unfrozen_FALSE_imagesvietnam_belize_/_imagesvietnam_belize_1_modelalexNet.pt")
 
 # Set path to BoxDrive
 WavInput <- '/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance/'
+
 BoxDrivePath <- list.files(WavInput,
                            full.names = T, pattern='wav')
 
@@ -28,6 +29,10 @@ BoxDrivePathShort <- str_split_fixed(BoxDrivePathShort,pattern = '.wav',n=2)[,1]
 clip.duration <- 4
 hop.size <- 3
 threshold <- 0.5
+OutputFolder <- 'data/Detections/AlexNetbelize/'
+dir.create(OutputFolder)
+Outputdirselection <- 'data/DetectionSelections/AlexNetbelize/'
+dir.create(Outputdirselection)
 
 for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
   RavenSelectionTableDFAlexnet <- data.frame()
@@ -138,8 +143,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
     # Calculate the probability associated with each class
     Probability <- AlexnetProb
     
-    OutputFolder <- 'data/Detections/Alexnetbelize/'
-    
+
     image.files <- list.files(file.path(test.input),recursive = T,
                               full.names = T)
     nslash <- str_count(image.files,'/')+1
@@ -226,9 +230,10 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
       RavenSelectionTableDFAlexnet <- rbind.data.frame(RavenSelectionTableDFAlexnet,
                                                      RavenSelectionTableDFAlexnetTemp)
       
+   
       if(nrow(RavenSelectionTableDFAlexnet) > 0){
         csv.file.name <-
-          paste('data/DetectionSelections/AlexNetbelize/',
+          paste(Outputdirselection,
                 BoxDrivePathShort[x],
                 'GunshotAlexnetAllFiles.txt',
                 sep = '')
@@ -262,12 +267,12 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
 
 
 
-# VGG16balanced Model -------------------------------------------------------------
+# AlexNetbalanced Model -------------------------------------------------------------
 
 
 # Load pre-trained models
 
-modelVGG16balancedGunshot <- luz_load("data/_output_unfrozen_TRUE_imagesvietnam_/_imagesvietnam_5_modelVGG16.pt")
+modelAlexNetbalancedGunshot <- luz_load("data/_output_unfrozen_TRUE_imagesvietnam_/_imagesvietnam_1_modelAlexNet.pt")
 
 # Set path to BoxDrive
 WavInput <- '/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance/'
@@ -282,10 +287,13 @@ BoxDrivePathShort <- str_split_fixed(BoxDrivePathShort,pattern = '.wav',n=2)[,1]
 
 clip.duration <- 4
 hop.size <- 3
-
+OutputFolder <- 'data/Detections/AlexNetimagesvietnam/'
+dir.create(OutputFolder)
+Outputdirselection <- 'data/DetectionSelections/AlexNetimagesvietnam/'
+dir.create(Outputdirselection)
 
 for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
-  RavenSelectionTableDFVGG16balanced <- data.frame()
+  RavenSelectionTableDFAlexNetbalanced <- data.frame()
   
   start.time.detection <- Sys.time()
   print(paste(x, 'out of', length(BoxDrivePath)))
@@ -364,8 +372,8 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
       graphics.off()
     }
     
-    # Predict using VGG16balanced ----------------------------------------------------
-    print('Classifying images using VGG16balanced')
+    # Predict using AlexNetbalanced ----------------------------------------------------
+    print('Classifying images using AlexNetbalanced')
     
     test.input <- '/Users/denaclink/Desktop/data/Temp/Images/'
     
@@ -384,16 +392,16 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
     # Load the test images
     test_dl <- dataloader(test_ds, batch_size =nfiles, shuffle = F)
     
-    # Predict using VGG16balanced
-    VGG16balancedPred <- predict(modelVGG16balancedGunshot, test_dl)
-    VGG16balancedProb <- torch_sigmoid(VGG16balancedPred)
-    VGG16balancedProb <-  1- as_array(torch_tensor(VGG16balancedProb, device = 'cpu'))
-    VGG16balancedClass <- ifelse((VGG16balancedProb) > threshold, 'gunshot', 'noise')
+    # Predict using AlexNetbalanced
+    AlexNetbalancedPred <- predict(modelAlexNetbalancedGunshot, test_dl)
+    AlexNetbalancedProb <- torch_sigmoid(AlexNetbalancedPred)
+    AlexNetbalancedProb <-  1- as_array(torch_tensor(AlexNetbalancedProb, device = 'cpu'))
+    AlexNetbalancedClass <- ifelse((AlexNetbalancedProb) > threshold, 'gunshot', 'noise')
     
     # Calculate the probability associated with each class
-    Probability <- VGG16balancedProb
+    Probability <- AlexNetbalancedProb
     
-    OutputFolder <- 'data/Detections/VGG16balanced/'
+    OutputFolder <- 'data/Detections/AlexNetbalanced/'
     
     image.files <- list.files(file.path(test.input),recursive = T,
                               full.names = T)
@@ -430,7 +438,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
                         image.files.short[DetectionIndices],
                         '_',
                         round(Probability[DetectionIndices],2),
-                        '_VGG16balanced_.jpg', sep=''))
+                        '_AlexNetbalanced_.jpg', sep=''))
     
     Detections <- image.files.short[DetectionIndices]
     
@@ -445,7 +453,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
       end.time.new <- start.time.new + clip.duration
       Probability <- round(Probability[DetectionIndices],2)
       
-      RavenSelectionTableDFVGG16balancedTemp <-
+      RavenSelectionTableDFAlexNetbalancedTemp <-
         cbind.data.frame(Selection,
                          View,
                          Channel,
@@ -453,8 +461,8 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
                          MaxFreq,start.time.new,end.time.new,Probability,
                          Detections)
       
-      RavenSelectionTableDFVGG16balancedTemp <-
-        RavenSelectionTableDFVGG16balancedTemp[, c(
+      RavenSelectionTableDFAlexNetbalancedTemp <-
+        RavenSelectionTableDFAlexNetbalancedTemp[, c(
           "Selection",
           "View",
           "Channel",
@@ -465,7 +473,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
           'Probability',"Detections"
         )]
       
-      colnames(RavenSelectionTableDFVGG16balancedTemp) <-
+      colnames(RavenSelectionTableDFAlexNetbalancedTemp) <-
         c(
           "Selection",
           "View",
@@ -478,18 +486,18 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
           "Detections"
         )
       
-      RavenSelectionTableDFVGG16balanced <- rbind.data.frame(RavenSelectionTableDFVGG16balanced,
-                                                       RavenSelectionTableDFVGG16balancedTemp)
+      RavenSelectionTableDFAlexNetbalanced <- rbind.data.frame(RavenSelectionTableDFAlexNetbalanced,
+                                                       RavenSelectionTableDFAlexNetbalancedTemp)
       
-      if(nrow(RavenSelectionTableDFVGG16balanced) > 0){
+      if(nrow(RavenSelectionTableDFAlexNetbalanced) > 0){
         csv.file.name <-
-          paste('data/DetectionSelections/VGG16balanced/',
+          paste(Outputdirselection,
                 BoxDrivePathShort[x],
-                'GunshotVGG16balancedAllFiles.txt',
+                'GunshotAlexNetbalancedAllFiles.txt',
                 sep = '')
         
         write.table(
-          x = RavenSelectionTableDFVGG16balanced,
+          x = RavenSelectionTableDFAlexNetbalanced,
           sep = "\t",
           file = csv.file.name,
           row.names = FALSE,
@@ -515,12 +523,12 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
 }
 
 
-# VGG16unbalanced Model -------------------------------------------------------------
+# AlexNetunbalanced Model -------------------------------------------------------------
 
 
 # Load pre-trained models
 
-modelVGG16unbalancedGunshot <- luz_load("data/_output_unfrozen_FALSE_imagesvietnamunbalanced_/_imagesvietnamunbalanced_1_modelVGG16.pt")
+modelAlexNetunbalancedGunshot <- luz_load("data/_output_unfrozen_FALSE_imagesvietnamunbalanced_/_imagesvietnamunbalanced_4_modelAlexNet.pt")
 
 # Set path to BoxDrive
 WavInput <- '/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/WavsFinalPerformance/'
@@ -535,10 +543,13 @@ BoxDrivePathShort <- str_split_fixed(BoxDrivePathShort,pattern = '.wav',n=2)[,1]
 
 clip.duration <- 4
 hop.size <- 3
-
+OutputFolder <- 'data/Detections/AlexNetimagesvietnamunbalanced/'
+dir.create(OutputFolder)
+Outputdirselection <- 'data/DetectionSelections/AlexNetimagesvietnamunbalanced/'
+dir.create(Outputdirselection)
 
 for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
-  RavenSelectionTableDFVGG16unbalanced <- data.frame()
+  RavenSelectionTableDFAlexNetunbalanced <- data.frame()
   
   start.time.detection <- Sys.time()
   print(paste(x, 'out of', length(BoxDrivePath)))
@@ -617,8 +628,8 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
       graphics.off()
     }
     
-    # Predict using VGG16unbalanced ----------------------------------------------------
-    print('Classifying images using VGG16unbalanced')
+    # Predict using AlexNetunbalanced ----------------------------------------------------
+    print('Classifying images using AlexNetunbalanced')
     
     test.input <- '/Users/denaclink/Desktop/data/Temp/Images/'
     
@@ -637,16 +648,16 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
     # Load the test images
     test_dl <- dataloader(test_ds, batch_size =nfiles, shuffle = F)
     
-    # Predict using VGG16unbalanced
-    VGG16unbalancedPred <- predict(modelVGG16unbalancedGunshot, test_dl)
-    VGG16unbalancedProb <- torch_sigmoid(VGG16unbalancedPred)
-    VGG16unbalancedProb <-  1- as_array(torch_tensor(VGG16unbalancedProb, device = 'cpu'))
-    VGG16unbalancedClass <- ifelse((VGG16unbalancedProb) > threshold, 'gunshot', 'noise')
+    # Predict using AlexNetunbalanced
+    AlexNetunbalancedPred <- predict(modelAlexNetunbalancedGunshot, test_dl)
+    AlexNetunbalancedProb <- torch_sigmoid(AlexNetunbalancedPred)
+    AlexNetunbalancedProb <-  1- as_array(torch_tensor(AlexNetunbalancedProb, device = 'cpu'))
+    AlexNetunbalancedClass <- ifelse((AlexNetunbalancedProb) > threshold, 'gunshot', 'noise')
     
     # Calculate the probability associated with each class
-    Probability <- VGG16unbalancedProb
+    Probability <- AlexNetunbalancedProb
     
-    OutputFolder <- 'data/Detections/VGG16unbalanced/'
+    OutputFolder <- 'data/Detections/AlexNetunbalanced/'
     
     image.files <- list.files(file.path(test.input),recursive = T,
                               full.names = T)
@@ -683,7 +694,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
                         image.files.short[DetectionIndices],
                         '_',
                         round(Probability[DetectionIndices],2),
-                        '_VGG16unbalanced_.jpg', sep=''))
+                        '_AlexNetunbalanced_.jpg', sep=''))
     
     Detections <- image.files.short[DetectionIndices]
     
@@ -698,7 +709,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
       end.time.new <- start.time.new + clip.duration
       Probability <- round(Probability[DetectionIndices],2)
       
-      RavenSelectionTableDFVGG16unbalancedTemp <-
+      RavenSelectionTableDFAlexNetunbalancedTemp <-
         cbind.data.frame(Selection,
                          View,
                          Channel,
@@ -706,8 +717,8 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
                          MaxFreq,start.time.new,end.time.new,Probability,
                          Detections)
       
-      RavenSelectionTableDFVGG16unbalancedTemp <-
-        RavenSelectionTableDFVGG16unbalancedTemp[, c(
+      RavenSelectionTableDFAlexNetunbalancedTemp <-
+        RavenSelectionTableDFAlexNetunbalancedTemp[, c(
           "Selection",
           "View",
           "Channel",
@@ -718,7 +729,7 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
           'Probability',"Detections"
         )]
       
-      colnames(RavenSelectionTableDFVGG16unbalancedTemp) <-
+      colnames(RavenSelectionTableDFAlexNetunbalancedTemp) <-
         c(
           "Selection",
           "View",
@@ -731,18 +742,18 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
           "Detections"
         )
       
-      RavenSelectionTableDFVGG16unbalanced <- rbind.data.frame(RavenSelectionTableDFVGG16unbalanced,
-                                                             RavenSelectionTableDFVGG16unbalancedTemp)
+      RavenSelectionTableDFAlexNetunbalanced <- rbind.data.frame(RavenSelectionTableDFAlexNetunbalanced,
+                                                             RavenSelectionTableDFAlexNetunbalancedTemp)
       
-      if(nrow(RavenSelectionTableDFVGG16unbalanced) > 0){
+      if(nrow(RavenSelectionTableDFAlexNetunbalanced) > 0){
         csv.file.name <-
-          paste('data/DetectionSelections/VGG16unbalanced/',
+          paste(Outputdirselection,
                 BoxDrivePathShort[x],
-                'GunshotVGG16unbalancedAllFiles.txt',
+                'GunshotAlexNetunbalancedAllFiles.txt',
                 sep = '')
         
         write.table(
-          x = RavenSelectionTableDFVGG16unbalanced,
+          x = RavenSelectionTableDFAlexNetunbalanced,
           sep = "\t",
           file = csv.file.name,
           row.names = FALSE,
@@ -766,7 +777,6 @@ for(x in rev(1:length(BoxDrivePath)) ){ tryCatch({
   print(end.time.detection-start.time.detection)
 }, error = function(e) { cat("ERROR :", conditionMessage(e), "\n") })
 }
-
 
 
 
