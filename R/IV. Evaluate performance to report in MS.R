@@ -9,8 +9,12 @@
   ListDirs <- list.files('data/DetectionSelections',full.names = T)
   
   PerformanceDF <- data.frame()
-  threshold <- 0.9
-  for(k in 1:length(ListDirs)){
+  threshold.vals <- c(.85,  .95 )
+
+  for(i in 1:length(threshold.vals)){
+    threshold <-  threshold.vals[i]
+  
+  for(k in 1:1){
     
     Prediction.files <- list.files(ListDirs[k],
                                   pattern='.txt',full.names = T)
@@ -21,8 +25,6 @@
     # Read files
     annotation_file <- Annotated.files[[j]]  # Replace with actual index
     prediction_file  <- Prediction.files[[j]]  # Replace with actual index
-    
-
     
     # Read annotation and prediction files
     annotations <- fread(annotation_file)
@@ -42,7 +44,7 @@
     true_positives <- 0
     false_positives <- 0
     false_negatives <- 0
-    
+    total_negatives <- 1199 #(number of clips)
     # Loop through each annotation
     for (i in 1:nrow(annotations)) {
       annotation_start <- annotations$start[i]
@@ -67,6 +69,13 @@
     # Calculate metrics
     precision <- true_positives / (true_positives + false_positives)
     recall <- true_positives / (true_positives + false_negatives)
+    
+    true_negatives <- total_negatives - false_positives
+    # Calculate True Positive Rate (TPR) and False Positive Rate (FPR)
+    tpr <- recall  # TPR is the same as Recall
+    fpr <- false_positives / (false_positives + true_negatives)
+    
+    
     if(is.na(precision) == FALSE ){
     f1_score <- if ((precision + recall) == 0) 0 else 2 * precision * recall / (precision + recall)
     } else {
@@ -74,7 +83,7 @@
     }
     short_name <- Prediction.files.short[j]
     
-    TempPerformance <-cbind.data.frame(precision,recall,f1_score,short_name)
+    TempPerformance <-cbind.data.frame(precision,recall,f1_score,fpr,short_name,threshold)
     TempPerformance$TrainingData <- basename(ListDirs[k])
     PerformanceDF <- rbind.data.frame(PerformanceDF,TempPerformance)
     # Print metrics
@@ -85,6 +94,7 @@
     
   }
   }
+  }
   
   mean(PerformanceDF$recall)
   mean(PerformanceDF$precision)
@@ -92,7 +102,12 @@
   
   
   
-  PerformanceDF %>%
-    group_by(TrainingData) %>%
-    summarise_at(vars(recall,precision,f1_score), list(mean = mean))
+  SummaryPerformanceDF <- PerformanceDF %>%
+    group_by(TrainingData, threshold) %>%
+    summarise_at(vars(recall,precision,f1_score,fpr), list(median = median))
+  
+  as.data.frame(SummaryPerformanceDF)
+  
+  
+ 
   

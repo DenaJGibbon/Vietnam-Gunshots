@@ -1,16 +1,16 @@
 library(tidyverse)
-
+library(ggpubr)
 # With balanced Vietnam data
-performancetablesA <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnam_binary_unfrozen_FALSE_/performance_tables/'
-performancetablesB <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnam_binary_unfrozen_TRUE_/performance_tables/'
+performancetablesA <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_binary_unfrozen_FALSE_/performance_tables/'
+performancetablesB <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_binary_unfrozen_TRUE_/performance_tables/'
 # 
 # # With Belize data
-performancetablesC <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnam_belize_binary_unfrozen_FALSE_/performance_tables/'
-performancetablesD <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnam_belize_binary_unfrozen_TRUE_/performance_tables/'
+performancetablesC <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_belize_binary_unfrozen_FALSE_/performance_tables/'
+performancetablesD <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_belize_binary_unfrozen_TRUE_/performance_tables/'
 
 # With unbalanced Vietnam data
-performancetablesE <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
-performancetablesF <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnamunbalanced_binary_unfrozen_TRUE_/performance_tables'
+performancetablesE <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
+performancetablesF <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnamunbalanced_binary_unfrozen_TRUE_/performance_tables'
 
 # Find best performing model
 FrozenFiles <- list.files(c(performancetablesA,performancetablesB,performancetablesC,performancetablesD,
@@ -34,14 +34,14 @@ best_recall_results <- data.frame()
 best_auc_results <- data.frame()
 # Loop through each 'TrainingData' type and find the row with the maximum F1 score
 for (td in unique_training_data) {
-  subset_data <- subset(performance_scores, `Training Data` == td   )
+  subset_data <- subset(performance_scores, `Training Data` == td  & Threshold > 0.25)
   max_f1_row <- subset_data[which.max(subset_data$F1), ]
   best_f1_results <- rbind.data.frame(best_f1_results, max_f1_row)
   #max_precision_row <- subset_data[which(subset_data$Precision==1), ]
   max_precision_row <- subset_data[which.max(subset_data$Precision), ]
   best_precision_results <-rbind.data.frame(best_precision_results, max_precision_row)
-  #max_recall_row <- subset_data[which(subset_data$Recall>.9), ]
-  max_recall_row <- max_recall_row[which.max(max_recall_row$Recall), ]
+  max_recall_row <- subset_data[which(subset_data$Recall>.9), ]
+  max_recall_row <- max_recall_row[which.max(max_recall_row$F1), ]
   best_recall_results <-rbind.data.frame(best_recall_results, max_recall_row)
   
   max_auc_row <- subset_data[which.max(subset_data$AUC), ]
@@ -60,23 +60,23 @@ bestF1 <- performance_scores[order(performance_scores$F1,decreasing=TRUE), ]
 bestF1[1:5,]
 
 
-CombinedBestPerforming <- rbind.data.frame(best_f1_results,best_precision_results,best_recall_results,
-                                           best_auc_results)
+CombinedBestPerforming <- rbind.data.frame(best_f1_results,best_precision_results,best_recall_results
+                                           )
 
 
-CombinedBestPerforming <- CombinedBestPerforming[,c("Precision", "Recall", "F1","AUC",
+CombinedBestPerforming <- CombinedBestPerforming[,c("Precision", "Recall", "F1",#"AUC",
                                                     "Training Data", "N epochs", "CNN Architecture", "Threshold", "Frozen")]
 
 CombinedBestPerforming$Precision <- round(CombinedBestPerforming$Precision,2)
 CombinedBestPerforming$F1 <- round(CombinedBestPerforming$F1,2)
-CombinedBestPerforming$AUC <- round(CombinedBestPerforming$AUC,2)
+#CombinedBestPerforming$AUC <- round(CombinedBestPerforming$AUC,2)
 
 CombinedBestPerforming$Recall<- round(CombinedBestPerforming$Recall,2)
 
 
 CombinedBestPerforming$Precision <- format(CombinedBestPerforming$Precision,nsmall = 2)
 CombinedBestPerforming$F1 <- format(CombinedBestPerforming$F1,nsmall = 2)
-CombinedBestPerforming$AUC <- format(CombinedBestPerforming$AUC,nsmall = 2)
+#CombinedBestPerforming$AUC <- format(CombinedBestPerforming$AUC,nsmall = 2)
 
 CombinedBestPerforming$Threshold <- format(CombinedBestPerforming$Threshold,nsmall = 2)
 
@@ -102,7 +102,10 @@ CombinedBestPerformingFlex
 
 bestF1[,c(1:2,5:7,17)] <- round(bestF1[,c(1:2,5:7,17)],2)
 bestF1Flex <- flextable::flextable(bestF1[,c(1:2,5:7,13:18)])
-flextable::save_as_docx(bestF1Flex, path='Online Supporting Material Table 1.docx')
+#flextable::save_as_docx(CombinedBestPerformingFlex, path='Online Supporting Material Table 1.docx')
+
+
+
 
 # Re-create histogram -----------------------------------------------------
 # Create a vector of hours as ranges (0-1, 2-3, etc.)
