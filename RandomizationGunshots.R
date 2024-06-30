@@ -11,10 +11,7 @@ Histogramofcounts <- gghistogram(data=SpatialRandom, x="UpdatedNumber" )+ ylab('
 
 # How many gunshots?
 TotalGunshots <- sum(SpatialRandom$UpdatedNumber)
-
-Gunshots25 <- round(TotalGunshots*0.25,0)
-Gunshots50 <- round(TotalGunshots*0.5,0)
-Gunshots75 <- round(TotalGunshots*0.75,0)
+print(TotalGunshots)
 
 # Randomization 
 # Function to reduce the total sum of UpdatedNumber by a specified amount
@@ -102,4 +99,4 @@ BoxplotRandom <- ggboxplot(data=RandomizationDFlong,x='n.remove', y='p.value')+ 
   geom_hline(yintercept =0.05, col = "red", lty='dashed')
 
 
-cowplot::plot_grid(Histogramofcounts,BoxplotRandom)
+cowplot::plot_grid(Histogramofcounts,BoxplotRandom, labels=c('A','B'),label_x =0.9)

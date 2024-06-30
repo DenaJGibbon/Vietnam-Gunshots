@@ -10,9 +10,6 @@ library(tuneR)
 library(seewave)
 library(gibbonR)
 
-# Load pre-trained models
-#modelAlexnetGunshot <- luz_load("modelAlexnetGunshot.pt")
-#modelVGG19Gunshot <- luz_load("modelVGG19Gunshot.pt")
 
 # Set path to BoxDrive
 BoxDrivePath <- list.files('/Users/denaclink/Library/CloudStorage/Box-Box/Gunshot analysis/TestWavs',

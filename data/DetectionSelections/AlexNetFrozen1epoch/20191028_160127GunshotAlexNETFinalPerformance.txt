@@ -1,4 +1,0 @@
-Selection	View	Channel	Begin Time (s)	End Time (s)	Low Freq (Hz)	High Freq (Hz)	Probability	Detections
-1	Spectrogram 1	1	376	380	100	2000	0.95	20191028_160127_376
-1	Spectrogram 1	1	1795	1799	100	2000	0.97	20191028_160127_1795
-1	Spectrogram 1	1	3526	3530	100	2000	0.93	20191028_160127_3526

@@ -115,6 +115,7 @@ PerformanceOutPutTrained <- gibbonNetR::get_best_performance(performancetables.d
 PerformanceOutPutTrained$f1_plot
 PerformanceOutPutTrained$best_f1$F1
 PerformanceOutPutTrained$pr_plot
+PerformanceOutPutTrained$best_auc$AUC
 (PerformanceOutPutTrained$pr_plot)+scale_color_manual(values=matlab::jet.colors(6))
 
 
@@ -136,12 +137,13 @@ PerformanceOutPutTrained <- gibbonNetR::get_best_performance(performancetables.d
 PerformanceOutPutTrained$f1_plot
 PerformanceOutPutTrained$best_f1$F1
 PerformanceOutPutTrained$pr_plot
+PerformanceOutPutTrained$best_auc$AUC
 (PerformanceOutPutTrained$pr_plot)+scale_color_manual(values=matlab::jet.colors(6))
 
 
 
 # Vietnam model on Belize -------------------------------------------------
-trained_models_dir <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/'
+trained_models_dir <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output/_imagesvietnamunbalanced_binary_unfrozen_TRUE_/'
 
 image_data_dir <- 'data/imagesbelizetest/test/'
 
