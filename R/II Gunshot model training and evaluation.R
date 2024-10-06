@@ -1,8 +1,7 @@
-# A. Vietnam Binary Model Training (unbalanced) ---------------------------------------------------------
 setwd("/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots")
-
+# A. Vietnam Binary Model Training (unbalanced) ---------------------------------------------------------
 # Load necessary packages and functions
-devtools::load_all("/Users/denaclink/Desktop/RStudioProjects/gibbonNetR")
+library(gibbonNetR)
 
 # Location of spectrogram images for training
 input.data.path <-  'data/imagesvietnamunbalanced/'
@@ -19,6 +18,7 @@ epoch.iterations <- c(1, 2, 3, 4, 5, 20)
 # Train the models specifying different architectures
 architectures <- c('alexnet', 'vgg16', 'resnet18')
 freeze.param <- c(TRUE, FALSE)
+
 for (a in 1:length(architectures)) {
   for (b in 1:length(freeze.param)) {
     gibbonNetR::train_CNN_binary(
@@ -33,7 +33,7 @@ for (a in 1:length(architectures)) {
       epoch.iterations = epoch.iterations,
       list.thresholds = seq(0, 1, .1),
       early.stop = "yes",
-      output.base.path = "model_output_finaltest/",
+      output.base.path = "model_output_finaltest_3/",
       trainingfolder = trainingfolder.short,
       positive.class = "gunshot",
       negative.class = "noise"
@@ -73,7 +73,7 @@ for (a in 1:length(architectures)) {
       epoch.iterations = epoch.iterations,
       list.thresholds = seq(0, 1, .1),
       early.stop = "yes",
-      output.base.path = "model_output_finaltest/",
+      output.base.path = "model_output_finaltest_2/",
       trainingfolder = trainingfolder.short,
       positive.class = "gunshot",
       negative.class = "noise"
@@ -113,7 +113,7 @@ for (a in 1:length(architectures)) {
       epoch.iterations = epoch.iterations,
       list.thresholds = seq(0, 1, .1),
       early.stop = "yes",
-      output.base.path = "model_output_finaltest/",
+      output.base.path = "model_output_finaltest_2/",
       trainingfolder = trainingfolder.short,
       positive.class = "gunshot",
       negative.class = "noise"
@@ -123,7 +123,11 @@ for (a in 1:length(architectures)) {
 }
 
 
-performancetables.dir.multi.balanced.true <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnamunbalanced_binary_unfrozen_TRUE_/performance_tables'
+# Evaluate performance of all models to report ----------------------------
+# Reminder that par$requires_grad_(TRUE) means that it is unfrozen; e.g. there is fine-tuning
+BasePath <- "/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest_2/"
+
+performancetables.dir.multi.balanced.true <- paste(BasePath,'_imagesvietnamunbalanced_binary_unfrozen_TRUE_/performance_tables',sep='')
 PerformanceOutputmulti.balanced.true <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.balanced.true,
                                                                            class='gunshot',
                                                                            model.type = "binary",
@@ -133,17 +137,18 @@ PerformanceOutputmulti.balanced.true$f1_plot
 PerformanceOutputmulti.balanced.true$best_f1$F1
 PerformanceOutputmulti.balanced.true$best_auc$AUC
 
-performancetables.dir.multi.balanced.false <-'/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
+performancetables.dir.multi.balanced.false <-paste(BasePath,'_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables',sep='')
 PerformanceOutputmulti.balanced.false <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.balanced.false,
                                                                             class='gunshot',
                                                                             model.type = "binary",
                                                                             Thresh.val = 0.1)
 
 PerformanceOutputmulti.balanced.false$f1_plot
+PerformanceOutputmulti.balanced.false$pr_plot
 PerformanceOutputmulti.balanced.false$best_f1$F1
 PerformanceOutputmulti.balanced.false$best_auc$AUC
 
-performancetables.dir.multi.unbalanced.true <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_binary_unfrozen_TRUE_/performance_tables'
+performancetables.dir.multi.unbalanced.true <- paste(BasePath,'_imagesvietnam_binary_unfrozen_TRUE_/performance_tables',sep='')
 PerformanceOutputmulti.unbalanced.true <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.unbalanced.true,
                                                            class='gunshot',
                                                            model.type = "binary",
@@ -153,7 +158,7 @@ PerformanceOutputmulti.unbalanced.true$f1_plot
 PerformanceOutputmulti.unbalanced.true$best_f1$F1
 PerformanceOutputmulti.unbalanced.true$best_auc$AUC
 
-performancetables.dir.multi.unbalanced.false <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_binary_unfrozen_FALSE_/performance_tables'
+performancetables.dir.multi.unbalanced.false <- paste(BasePath,'_imagesvietnam_binary_unfrozen_FALSE_/performance_tables',sep='')
 PerformanceOutputmulti.unbalanced.false <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.unbalanced.false,
                                                                            class='gunshot',
                                                                            model.type = "binary",
@@ -163,7 +168,7 @@ PerformanceOutputmulti.unbalanced.false$f1_plot
 PerformanceOutputmulti.unbalanced.false$best_f1$F1
 PerformanceOutputmulti.unbalanced.false$best_auc$AUC
 
-performancetables.dir.multi.addbelize.true <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_belize_binary_unfrozen_TRUE_/performance_tables'
+performancetables.dir.multi.addbelize.true <- paste(BasePath,'_imagesvietnam_belize_binary_unfrozen_TRUE_/performance_tables',sep='')
 PerformanceOutputmulti.addbelize.true <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.addbelize.true,
                                                                       class='gunshot',
                                                                       model.type = "binary",
@@ -173,7 +178,7 @@ PerformanceOutputmulti.addbelize.true$f1_plot
 PerformanceOutputmulti.addbelize.true$best_f1$F1
 PerformanceOutputmulti.addbelize.true$best_auc$AUC
 
-performancetables.dir.multi.addbelize.false <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_finaltest/_imagesvietnam_belize_binary_unfrozen_FALSE_/performance_tables'
+performancetables.dir.multi.addbelize.false <- paste(BasePath,'_imagesvietnam_belize_binary_unfrozen_FALSE_/performance_tables',sep='')
 PerformanceOutputmulti.addbelize.false <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.addbelize.false,
                                                                           class='gunshot',
                                                                           model.type = "binary",
@@ -228,15 +233,11 @@ CombinedBestPerforming$`CNN Architecture` <- plyr::revalue(CombinedBestPerformin
 CombinedBestPerformingFlex <- flextable::flextable(CombinedBestPerforming)
 CombinedBestPerformingFlex
 
-flextable::save_as_docx(CombinedBestPerformingFlex, path='Table 2 Performance Summary.docx')
+# Note that for the 'Frozen' column, YES= fine-tuned, NO= no fine-tuning
+#flextable::save_as_docx(CombinedBestPerformingFlex, path='Table 2 Performance Summary Updated.docx')
 
 
 # Test for generalizability -------------------------------------------------------------------------
-
-setwd("/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots")
-
-# Load necessary packages and functions
-devtools::load_all("/Users/denaclink/Desktop/RStudioProjects/gibbonNetR")
 
 # Location of spectrogram images for training
 input.data.path <-  'data/imagesvietnamunbalanced/'
@@ -248,7 +249,7 @@ test_data_path <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/dat
 trainingfolder.short <- 'imagesvietnamunbalanced'
 
 # Number of epochs to include
-epoch.iterations <- c(1)
+epoch.iterations <- c(2)
 
 # Train the models specifying different architectures
 architectures <- c('alexnet')
@@ -267,7 +268,7 @@ for (a in 1:length(architectures)) {
       epoch.iterations = epoch.iterations,
       list.thresholds = seq(0, 1, .1),
       early.stop = "yes",
-      output.base.path = "model_output_testonbelize/",
+      output.base.path = "model_output_testonbelize_V2/",
       trainingfolder = trainingfolder.short,
       positive.class = "gunshot",
       negative.class = "noise"
@@ -277,7 +278,7 @@ for (a in 1:length(architectures)) {
 }
 
 
-performancetables.dir.multi.testbelize <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_testonbelize/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
+performancetables.dir.multi.testbelize <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_testonbelize_V2/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
 PerformanceOutputmulti.testbelize <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.testbelize,
                                                                            class='gunshot',
                                                                            model.type = "binary",
@@ -286,4 +287,4 @@ PerformanceOutputmulti.testbelize <- gibbonNetR::get_best_performance(performanc
 PerformanceOutputmulti.testbelize$f1_plot
 PerformanceOutputmulti.testbelize$best_f1$F1
 PerformanceOutputmulti.testbelize$best_auc$AUC
-
+as.data.frame(PerformanceOutputmulti.testbelize$best_f1)

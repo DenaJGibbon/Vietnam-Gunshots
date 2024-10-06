@@ -1,6 +1,6 @@
 devtools::load_all("/Users/denaclink/Desktop/RStudioProjects/gibbonNetR")
 
-TrainingDatapath <- '/Volumes/DJC Files 1/GunshotDataWavBelize/Training data'
+TrainingDatapath <- '/Volumes/DJC Files/GunshotDataWavBelize/Training data reduced'
 
 gibbonNetR::spectrogram_images(
   trainingBasePath = TrainingDatapath,

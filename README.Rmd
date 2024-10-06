@@ -20,6 +20,8 @@ This repository contains code for training and evaluating a gunshot detection mo
 
 This analysis uses the 'gibbonNetR' package, which can be accessed here: https://github.com/DenaJGibbon/gibbonNetR.
 
+THe full dataset including .wav files that correspond to images used in the present analysis can be found on Zenodo 
+
 ## Dataset
 
 The dataset used for training, validation, and testing is obtained from sound clips of annotated PAM data, and includes labeled images of gunshots and noise. The images are preprocessed using various transformations, such as resizing, color jitter, and normalization, to prepare them for input into the model.
@@ -87,7 +89,7 @@ images %>%
 
 ## Training
 
-The training process involves fine-tuning the pretrained AlexNet, VGG16, and ResNet18 models by training new classifier layers. The model is set up with a binary cross-entropy loss function and the Adam optimizer. Training can be performed for 1-5 epochs or 20 epochs with early stopping enabled to prevent overfitting. 
+The training process involves fine-tuning the pretrained AlexNet, VGG16, and ResNet18 models by training new classifier layers. The model is set up with a binary cross-entropy loss function and the Adam optimizer. Training can be performed for 1-5 epochs or 20 epochs (or as many as you want) with early stopping enabled to prevent overfitting. 
 
 The trained model is saved for future use.
 
@@ -96,7 +98,7 @@ The trained model is saved for future use.
 devtools::load_all("/Users/denaclink/Desktop/RStudioProjects/gibbonNetR")
 ```
 
-```{r, echo=TRUE, message=FALSE}
+```{r, echo=TRUE, message=FALSE,warning=FALSE}
 
 # Location of spectrogram images for training
 input.data.path <-  'data/imagesvietnamunbalanced/'
@@ -141,9 +143,9 @@ for (a in 1:length(architectures)) {
 
 ## Evaluation
 
-To evaluate the performance of the trained model, the test dataset is used. The images in the test dataset are preprocessed in the same way as during training. The model predicts the probability of an image belonging to the positive class (gunshot) and calculates the F1 score as the evaluation metric. Additionally, a confusion matrix is generated to provide insights into the model's performance.
+To evaluate the performance of the trained model, the test dataset is used. The images in the test dataset are preprocessed in the same way as during training. The model predicts the probability of an image belonging to the positive class (gunshot) and calculates the F1 score as the evaluation metric. 
 
-```{r, echo=TRUE, message=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 performancetables.dir.multi.testbelize <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_testonbelize/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
 PerformanceOutputmulti.testbelize <- gibbonNetR::get_best_performance(performancetables.dir=performancetables.dir.multi.testbelize,
                                                                            class='gunshot',
@@ -157,9 +159,9 @@ PerformanceOutputmulti.testbelize$best_auc$AUC
 
 ## Usage
 
-To use the trained model for predictions without the 'gibbonNetR' pacakge, load the saved model using the 'luz_load' function. Then, preprocess the input image(s) in the same way as during training and pass them to the model for prediction. The output will be the predicted class label or probability.
+To use the trained model for predictions without the 'gibbonNetR' package, load the saved model using the 'luz_load' function. Then, preprocess the input image(s) in the same way as during training and pass them to the model for prediction. The output will be the predicted class label or probability.
 
-```R
+```{r}
 # Load libraries
 library(luz)
 library(torch)
@@ -216,7 +218,7 @@ print(AlexnetPerf$table)
 ```
 
 ## Acknowledgments
-This project was inspired by the work of Keydana (2023) on image classification with transfer learning. Special thanks to the luz package authors for providing the framework for deep learning in R with PyTorch.
+This project was inspired by the work of Keydana (2023) on image classification with transfer learning. Special thanks to the 'torch' package authors for providing the framework for deep learning in R with PyTorch.
 
 ## References
 Keydana, Sigrid. Deep Learning and Scientific Computing with R torch. CRC Press, 2023. https://skeydan.github.io/Deep-Learning-and-Scientific-Computing-with-R-torch/

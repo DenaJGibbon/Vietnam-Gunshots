@@ -2,7 +2,7 @@ library(ggpubr)
 library(tidyr)
 library(cowplot)
 
-SpatialRandom <- read.csv("/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/Number of Gunshot_Detected_forRandomization.csv")
+SpatialRandom <- read.csv("data/Number of Gunshot_Detected_forRandomization.csv")
 
 SpatialRandom <- na.omit(SpatialRandom)
 

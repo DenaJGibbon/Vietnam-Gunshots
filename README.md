@@ -27,8 +27,8 @@ prepare them for input into the model.
 The training process involves fine-tuning the pretrained AlexNet, VGG16,
 and ResNet18 models by training new classifier layers. The model is set
 up with a binary cross-entropy loss function and the Adam optimizer.
-Training can be performed for 1-5 epochs or 20 epochs with early
-stopping enabled to prevent overfitting.
+Training can be performed for 1-5 epochs or 20 epochs (or as many as you
+want) with early stopping enabled to prevent overfitting.
 
 The trained model is saved for future use.
 
@@ -86,8 +86,7 @@ To evaluate the performance of the trained model, the test dataset is
 used. The images in the test dataset are preprocessed in the same way as
 during training. The model predicts the probability of an image
 belonging to the positive class (gunshot) and calculates the F1 score as
-the evaluation metric. Additionally, a confusion matrix is generated to
-provide insights into the model’s performance.
+the evaluation metric.
 
 ``` r
 performancetables.dir.multi.testbelize <- '/Users/denaclink/Desktop/RStudioProjects/Vietnam-Gunshots/model_output_testonbelize/_imagesvietnamunbalanced_binary_unfrozen_FALSE_/performance_tables'
@@ -98,40 +97,40 @@ PerformanceOutputmulti.testbelize <- gibbonNetR::get_best_performance(performanc
 #> [1] "Best F1 results"
 #> [1] "gunshot"
 #>   Sensitivity Specificity Pos Pred Value Neg Pred Value Precision    Recall
-#> 1   0.9563758   0.1760508      0.3542573      0.8951613 0.3542573 0.9563758
+#> 1   0.9043624   0.2902458      0.3758717      0.8652482 0.3758717 0.9043624
 #>          F1 Prevalence Detection Rate Detection Prevalence Balanced Accuracy
-#> 1 0.5170068  0.3209478      0.3069467            0.8664513         0.5662133
+#> 1 0.5310345  0.3209478      0.2902531            0.7722132         0.5973041
 #>   Validation loss           Training Data N epochs CNN Architecture Threshold
-#> 1       0.1356868 imagesvietnamunbalanced        1          alexnet       0.4
+#> 1       0.1432444 imagesvietnamunbalanced        1          alexnet       0.4
 #>         AUC Frozen   Class
-#> 1 0.5930214  FALSE gunshot
+#> 1 0.6034908  FALSE gunshot
 #> [1] "Best Precision results"
-#>   Sensitivity Specificity Pos Pred Value Neg Pred Value Precision     Recall
-#> 1  0.01174497   0.9960349      0.5833333      0.6807588 0.5833333 0.01174497
+#>   Sensitivity Specificity Pos Pred Value Neg Pred Value Precision      Recall
+#> 1 0.005033557           1              1       0.680151         1 0.005033557
 #>           F1 Prevalence Detection Rate Detection Prevalence Balanced Accuracy
-#> 1 0.02302632  0.3209478    0.003769521          0.006462036         0.5038899
+#> 1 0.01001669  0.3209478    0.001615509          0.001615509         0.5025168
 #>   Validation loss           Training Data N epochs CNN Architecture Threshold
-#> 1       0.1356868 imagesvietnamunbalanced        1          alexnet       0.6
+#> 1       0.1432444 imagesvietnamunbalanced        1          alexnet       0.6
 #>         AUC Frozen   Class
-#> 1 0.5930214  FALSE gunshot
+#> 1 0.6034908  FALSE gunshot
 #> [1] "Best Recall results"
 #>   Sensitivity Specificity Pos Pred Value Neg Pred Value Precision Recall
-#> 1           1  0.01348136       0.323913              1  0.323913      1
+#> 1           1  0.01506741      0.3242655              1 0.3242655      1
 #>          F1 Prevalence Detection Rate Detection Prevalence Balanced Accuracy
-#> 1 0.4893268  0.3209478      0.3209478            0.9908454         0.5067407
+#> 1 0.4897288  0.3209478      0.3209478            0.9897684         0.5075337
 #>   Validation loss           Training Data N epochs CNN Architecture Threshold
-#> 1       0.1356868 imagesvietnamunbalanced        1          alexnet       0.3
+#> 1       0.1432444 imagesvietnamunbalanced        1          alexnet       0.3
 #>         AUC Frozen   Class
-#> 1 0.5930214  FALSE gunshot
+#> 1 0.6034908  FALSE gunshot
 #> [1] "Best AUC results"
 #>   Sensitivity Specificity Pos Pred Value Neg Pred Value Precision Recall
 #> 1           1           0      0.3209478             NA 0.3209478      1
 #>          F1 Prevalence Detection Rate Detection Prevalence Balanced Accuracy
 #> 1 0.4859356  0.3209478      0.3209478                    1               0.5
 #>   Validation loss           Training Data N epochs CNN Architecture Threshold
-#> 1       0.1356868 imagesvietnamunbalanced        1          alexnet       0.1
+#> 1       0.1432444 imagesvietnamunbalanced        1          alexnet       0.1
 #>         AUC Frozen   Class
-#> 1 0.5930214  FALSE gunshot
+#> 1 0.6034908  FALSE gunshot
 
 PerformanceOutputmulti.testbelize$f1_plot
 #> Warning: Removed 4 rows containing missing values or values outside the scale range
@@ -144,15 +143,15 @@ PerformanceOutputmulti.testbelize$f1_plot
 
 ``` r
 PerformanceOutputmulti.testbelize$best_f1$F1
-#> [1] 0.5170068
+#> [1] 0.5310345
 PerformanceOutputmulti.testbelize$best_auc$AUC
-#> [1] 0.5930214
+#> [1] 0.6034908
 ```
 
 ## Usage
 
 To use the trained model for predictions without the ‘gibbonNetR’
-pacakge, load the saved model using the ‘luz_load’ function. Then,
+package, load the saved model using the ‘luz_load’ function. Then,
 preprocess the input image(s) in the same way as during training and
 pass them to the model for prediction. The output will be the predicted
 class label or probability.
@@ -215,8 +214,9 @@ print(AlexnetPerf$table)
 ## Acknowledgments
 
 This project was inspired by the work of Keydana (2023) on image
-classification with transfer learning. Special thanks to the luz package
-authors for providing the framework for deep learning in R with PyTorch.
+classification with transfer learning. Special thanks to the ‘torch’
+package authors for providing the framework for deep learning in R with
+PyTorch.
 
 ## References
 
